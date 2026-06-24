@@ -1,0 +1,112 @@
+package com.cqu.springboot.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * <p>
+ * 书籍表
+ * </p>
+ *
+ * @author MisterDong
+ * @since 2026-06-23
+ */
+@Getter
+@Setter
+@TableName("books")
+public class Books implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 书籍ID
+     */
+    @TableId(value = "book_id", type = IdType.AUTO)
+    private Long bookId;
+
+    /**
+     * 书名
+     */
+    @TableField("title")
+    private String title;
+
+    /**
+     * 作者
+     */
+    @TableField("author")
+    private String author;
+
+    /**
+     * ISBN号
+     */
+    @TableField("isbn")
+    private String isbn;
+
+    /**
+     * 出版社
+     */
+    @TableField("publisher")
+    private String publisher;
+
+    /**
+     * 出版日期
+     */
+    @TableField("publish_date")
+    private LocalDate publishDate;
+
+    /**
+     * 分类ID
+     */
+    @TableField("category_id")
+    private Long categoryId;
+
+    /**
+     * 价格
+     */
+    @TableField("price")
+    private BigDecimal price;
+
+    /**
+     * 库存数量
+     */
+    @TableField("stock")
+    private Integer stock;
+
+    /**
+     * 书籍简介
+     */
+    @TableField("description")
+    private String description;
+
+    /**
+     * 封面图片URL
+     */
+    @TableField("cover_image")
+    private String coverImage;
+
+    /**
+     * 状态: 0-下架, 1-上架
+     */
+    @TableField("status")
+    private Byte status;
+
+    /**
+     * 创建时间
+     */
+    @TableField("create_time")
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    @TableField("update_time")
+    private LocalDateTime updateTime;
+}

@@ -1,0 +1,55 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    # 指定使用 Druid 连接池
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: "jdbc:mysql://localhost:3306/library_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Druid 连接池配置
+    druid:
+      # 监控统计配置
+      stat-view-servlet:
+        # 是否启用 Druid 监控页面
+        enabled: true
+        # 监控页面访问路径（访问 http://localhost:8080/druid/）
+        url-pattern: /druid/*
+        # 监控页面登录用户名（留空则无需登录）
+        login-username: admin
+        # 监控页面登录密码
+        login-password: admin
+        # 允许访问监控页面的IP（空表示全部允许，多个用逗号分隔）
+        allow:
+      # Web 监控过滤器配置（统计URL访问的SQL执行情况）
+      web-stat-filter:
+        # 是否启用 Web 监控过滤器
+        enabled: true
+        # 拦截的URL模式（/* 表示拦截所有请求）
+        url-pattern: /*
+        # 排除的URL模式（不统计这些请求，如静态资源）
+        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.cqu.springboot.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Knife4j Swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: "书籍管理"
+      paths-to-match: "/books/**"
+      packages-to-scan: com.cqu.springboot.controller
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
