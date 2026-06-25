@@ -53,3 +53,12 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+
+# JWT 配置
+jwt:
+  # 签名密钥（生产环境请更换为更安全的密钥）
+  secret: "Y2xhc3Nyb29tLWxpYnJhcnktc3lzdGVtLWp3dC1zZWNyZXQta2V5LTIwMjYtZm9yLWRldmVsb3BtZW50LW9ubHk="
+  # accessToken 有效期（毫秒）：2小时
+  access-token-expiration: 7200000
+  # refreshToken 有效期（毫秒）：7天
+  refresh-token-expiration: 604800000

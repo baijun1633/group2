@@ -10,12 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * <p>
  * 用户表
- * </p>
- *
- * @author MisterDong
- * @since 2026-06-23
  */
 @Getter
 @Setter
@@ -37,10 +32,16 @@ public class Users implements Serializable {
     private String username;
 
     /**
-     * 密码(加密)
+     * 密码(BCrypt加密)
      */
     @TableField("password")
     private String password;
+
+    /**
+     * 昵称
+     */
+    @TableField("nickname")
+    private String nickname;
 
     /**
      * 邮箱
@@ -55,16 +56,22 @@ public class Users implements Serializable {
     private String phone;
 
     /**
-     * 昵称
-     */
-    @TableField("nickname")
-    private String nickname;
-
-    /**
      * 头像URL
      */
     @TableField("avatar")
     private String avatar;
+
+    /**
+     * 角色: ADMIN-管理员, USER-普通用户
+     */
+    @TableField("role")
+    private String role;
+
+    /**
+     * 偏好标签(JSON格式，如 ["科幻","悬疑"])
+     */
+    @TableField("preference_tags")
+    private String preferenceTags;
 
     /**
      * 状态: 0-禁用, 1-启用

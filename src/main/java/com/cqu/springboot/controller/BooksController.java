@@ -1,43 +1,69 @@
 package com.cqu.springboot.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cqu.springboot.common.ApiResponse;
+import com.cqu.springboot.common.PageResponse;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.service.BooksService;
-import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * <p>
- * 书籍表 前端控制器
- * </p>
- *
- * @author MisterDong
- * @since 2026-06-23
+ * 图书控制器（公开接口）
+ * 路径: /api/v1/books
  */
 @RestController
-@RequestMapping("/books")
+@RequestMapping("/api/v1/books")
+@RequiredArgsConstructor
 public class BooksController {
 
-    @GetMapping("/test")
-    public String test() {
-        return "Library System is running!";
+    private final BooksService booksService;
+
+    /**
+     * 多维度搜索
+     * GET /api/v1/books/search?keyword=&page=&size=
+     */
+    @GetMapping("/search")
+    public ApiResponse<PageResponse<Books>> searchBooks(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<Books> result = booksService.searchBooks(keyword, page, size);
+        PageResponse<Books> response = new PageResponse<>(
+                result.getRecords(), result.getTotal(), page, size);
+        return ApiResponse.success(response);
     }
 
-    @Resource
-    private BooksService booksService;
+    /**
+     * 分类/标签筛选 + 排序
+     * GET /api/v1/books?categoryId=&tag=&sortBy=&order=&page=&size=
+     */
+    @GetMapping
+    public ApiResponse<PageResponse<Books>> filterBooks(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false, defaultValue = "createTime") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
-    @GetMapping("/getallbooks")
-    public List<Books> getallbooks() {
-        List<Books> books = booksService.findall();
-        System.err.println("书籍数量:"+books.size());
-        return booksService.findall();
+        Page<Books> result = booksService.filterBooks(categoryId, tag, sortBy, order, page, size);
+        PageResponse<Books> response = new PageResponse<>(
+                result.getRecords(), result.getTotal(), page, size);
+        return ApiResponse.success(response);
     }
 
-
-
-
+    /**
+     * 获取图书详情
+     * GET /api/v1/books/{bookId}
+     */
+    @GetMapping("/{bookId}")
+    public ApiResponse<Map<String, Object>> getBookDetail(@PathVariable Long bookId) {
+        Map<String, Object> detail = booksService.getBookDetail(bookId);
+        return ApiResponse.success(detail);
+    }
 }

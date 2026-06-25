@@ -12,12 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * <p>
  * 书籍表
- * </p>
- *
- * @author MisterDong
- * @since 2026-06-23
  */
 @Getter
 @Setter
@@ -79,6 +74,36 @@ public class Books implements Serializable {
      */
     @TableField("stock")
     private Integer stock;
+
+    /**
+     * 页数
+     */
+    @TableField("pages")
+    private Integer pages;
+
+    /**
+     * 标签(JSON格式，如 ["科幻","刘慈欣","三体"])
+     */
+    @TableField("tags")
+    private String tags;
+
+    /**
+     * 平均评分(1-5分)
+     */
+    @TableField("avg_rating")
+    private BigDecimal avgRating;
+
+    /**
+     * 评分人数
+     */
+    @TableField("rating_count")
+    private Integer ratingCount;
+
+    /**
+     * 系列信息(如 "三体三部曲")
+     */
+    @TableField("series_info")
+    private String seriesInfo;
 
     /**
      * 书籍简介
