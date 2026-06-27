@@ -1,9 +1,12 @@
 package com.cqu.springboot.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,6 +42,7 @@ public class SwaggerConfig {
      */
     @Bean
     public OpenAPI customOpenAPI() {
+        final String securitySchemeName = "Bearer Token";
         return new OpenAPI()
                 .info(new Info()
                         // 文档标题（显示在页面顶部）
@@ -55,6 +59,17 @@ public class SwaggerConfig {
                         // 许可证信息（可选，标注项目的开源/商业许可协议）
                         .license(new License()
                                 .name("Apache 2.0")
-                                .url("https://www.apache.org/licenses/LICENSE-2.0")));
+                                .url("https://www.apache.org/licenses/LICENSE-2.0")))
+                // 添加全局安全要求
+                .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                // 配置JWT Bearer认证组件
+                .components(new Components()
+                        .addSecuritySchemes(securitySchemeName,
+                                new SecurityScheme()
+                                        .name(securitySchemeName)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .in(SecurityScheme.In.HEADER)));
     }
 }

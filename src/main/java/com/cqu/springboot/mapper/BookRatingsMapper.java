@@ -16,6 +16,6 @@ public interface BookRatingsMapper extends BaseMapper<BookRatings> {
     /**
      * 计算某本书的平均评分
      */
-    @Select("SELECT AVG(score) as avgRating, COUNT(*) as ratingCount FROM book_ratings WHERE book_id = #{bookId}")
+    @Select("SELECT AVG(score) as avg_rating, COUNT(*) as rating_count FROM book_ratings WHERE book_id = #{bookId}")
     Map<String, Object> selectRatingStatsByBookId(@Param("bookId") Long bookId);
 }

@@ -62,6 +62,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/books/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/books").permitAll()
 
+                // 分类查询接口 - 无需登录
+                .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/categories").permitAll()
+
+                // 知识图谱可视化接口 - 无需登录
+                .requestMatchers(HttpMethod.GET, "/api/v1/kg/graph/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/kg/stats").permitAll()
+
+                // 推荐引擎接口 - 未登录返回热门/新书兜底（所有GET请求公开）
+                .requestMatchers(HttpMethod.GET, "/api/v1/recommend/**").permitAll()
+
                 // 管理员接口 - 需要ADMIN角色
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
@@ -72,7 +83,7 @@ public class SecurityConfig {
                 .requestMatchers("/druid/**").permitAll()
 
                 // 静态资源 - 无需登录
-                .requestMatchers("/static/**", "/covers/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/static/**", "/covers/**", "/css/**", "/js/**", "/images/**", "/uploads/**").permitAll()
 
                 // 根路径和错误页面
                 .requestMatchers("/", "/error").permitAll()

@@ -100,6 +100,8 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
         detail.put("pages", book.getPages());
         detail.put("avgRating", book.getAvgRating());
         detail.put("ratingCount", book.getRatingCount());
+        detail.put("viewCount", book.getViewCount());
+        detail.put("collectCount", book.getCollectCount());
         detail.put("seriesInfo", book.getSeriesInfo());
         detail.put("description", book.getDescription());
         detail.put("coverImage", book.getCoverImage());

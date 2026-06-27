@@ -5,19 +5,27 @@ import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.service.BooksService;
+import com.cqu.springboot.service.EbookService;
+import com.cqu.springboot.util.CsvUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * 管理员图书管理控制器
  * 路径: /api/v1/admin/books
  */
+@Tag(name = "管理员-图书管理", description = "图书 CRUD、批量导入、试读内容、电子书文件上传")
 @RestController
 @RequestMapping("/api/v1/admin/books")
 @RequiredArgsConstructor
@@ -25,6 +33,7 @@ public class AdminBooksController {
 
     private final BooksService booksService;
     private final ObjectMapper objectMapper;
+    private final EbookService ebookService;
 
     /**
      * 单本录入
@@ -54,7 +63,7 @@ public class AdminBooksController {
 
         // 处理数值字段
         if (request.get("price") != null) {
-            book.setPrice(new java.math.BigDecimal(request.get("price").toString()));
+            book.setPrice(new BigDecimal(request.get("price").toString()));
         }
         if (request.get("stock") != null) {
             book.setStock((Integer) request.get("stock"));
@@ -104,7 +113,7 @@ public class AdminBooksController {
             }
         }
         if (request.containsKey("price")) {
-            book.setPrice(new java.math.BigDecimal(request.get("price").toString()));
+            book.setPrice(new BigDecimal(request.get("price").toString()));
         }
         if (request.containsKey("stock")) {
             book.setStock((Integer) request.get("stock"));
@@ -114,6 +123,9 @@ public class AdminBooksController {
         }
         if (request.containsKey("categoryId")) {
             book.setCategoryId(Long.valueOf(request.get("categoryId").toString()));
+        }
+        if (request.containsKey("status")) {
+            book.setStatus(((Number) request.get("status")).byteValue());
         }
 
         book.setUpdateTime(LocalDateTime.now());
@@ -138,11 +150,112 @@ public class AdminBooksController {
     }
 
     /**
-     * 批量导入（暂不实现，预留接口）
+     * 批量导入图书
      * POST /api/v1/admin/books/batch
+     * <p>
+     * 上传 CSV 文件，表头：title, author, isbn, publisher, price, stock, pages, categoryId, description
+     * 返回导入统计：{total, success, failed, errors:[{row, message}]}
+     * </p>
      */
     @PostMapping("/batch")
-    public ApiResponse<String> batchImport() {
-        return ApiResponse.success("批量导入功能待实现", "TODO");
+    public ApiResponse<Map<String, Object>> batchImport(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
+        }
+        try {
+            String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+            var rows = CsvUtil.parse(content);
+            int success = 0;
+            int failed = 0;
+            var errors = new ArrayList<Map<String, Object>>();
+
+            for (int i = 0; i < rows.size(); i++) {
+                Map<String, String> row = rows.get(i);
+                try {
+                    Books book = new Books();
+                    book.setTitle(row.get("title"));
+                    book.setAuthor(row.get("author"));
+                    book.setIsbn(row.get("isbn"));
+                    book.setPublisher(row.get("publisher"));
+                    book.setDescription(row.get("description"));
+                    if (row.get("price") != null && !row.get("price").isBlank()) {
+                        book.setPrice(new BigDecimal(row.get("price")));
+                    }
+                    if (row.get("stock") != null && !row.get("stock").isBlank()) {
+                        book.setStock(Integer.valueOf(row.get("stock")));
+                    }
+                    if (row.get("pages") != null && !row.get("pages").isBlank()) {
+                        book.setPages(Integer.valueOf(row.get("pages")));
+                    }
+                    if (row.get("categoryId") != null && !row.get("categoryId").isBlank()) {
+                        book.setCategoryId(Long.valueOf(row.get("categoryId")));
+                    }
+                    if (book.getTitle() == null || book.getTitle().isBlank()) {
+                        throw new IllegalArgumentException("书名不能为空");
+                    }
+                    book.setStatus((byte) 1);
+                    book.setCreateTime(LocalDateTime.now());
+                    book.setUpdateTime(LocalDateTime.now());
+                    booksService.save(book);
+                    success++;
+                } catch (Exception e) {
+                    failed++;
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("row", i + 2); // +2: 表头1行 + 索引从0开始
+                    err.put("message", e.getMessage());
+                    errors.add(err);
+                }
+            }
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("total", rows.size());
+            result.put("success", success);
+            result.put("failed", failed);
+            result.put("errors", errors);
+            return ApiResponse.success("批量导入完成", result);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.CSV_PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    /**
+     * 更新试读内容
+     * PUT /api/v1/admin/books/{bookId}/preview
+     * <p>请求体：{"previewContent": "试读文本..."}</p>
+     */
+    @PutMapping("/{bookId}/preview")
+    public ApiResponse<Void> updatePreview(
+            @PathVariable Long bookId,
+            @RequestBody Map<String, String> request) {
+        Books book = booksService.getById(bookId);
+        if (book == null) {
+            throw new BusinessException(ErrorCode.BOOK_NOT_FOUND);
+        }
+        book.setPreviewContent(request.get("previewContent"));
+        book.setUpdateTime(LocalDateTime.now());
+        booksService.updateById(book);
+        return ApiResponse.success("试读内容已更新", null);
+    }
+
+    /**
+     * 上传电子书文件（EPUB/PDF）
+     * POST /api/v1/admin/books/{bookId}/ebook
+     * <p>multipart/form-data，参数名 file，支持 .epub/.pdf，最大 100MB</p>
+     * <p>文件存到 d:/code/library_sys/uploads/ebooks/{bookId}.{ext}，并更新 books 表</p>
+     */
+    @Operation(summary = "上传电子书文件", description = "上传 EPUB/PDF 文件，最大 100MB。文件名固定为 {bookId}.{ext}，重复上传会覆盖旧文件")
+    @PostMapping("/{bookId}/ebook")
+    public ApiResponse<Map<String, Object>> uploadEbook(
+            @PathVariable Long bookId,
+            @RequestParam("file") MultipartFile file) {
+        String url = ebookService.saveEbookFile(bookId, file);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("bookId", bookId);
+        result.put("ebookUrl", url);
+        result.put("ebookType", url.substring(url.lastIndexOf('.') + 1));
+        result.put("size", file.getSize());
+        return ApiResponse.success("电子书上传成功", result);
     }
 }

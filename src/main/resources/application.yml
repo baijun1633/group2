@@ -2,6 +2,17 @@ server:
   port: 8080
 
 spring:
+  # Neo4j 图数据库配置
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: neo4j123
+  # 文件上传配置（Task 8.7 电子书上传，最大 100MB）
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   datasource:
     # 指定使用 Druid 连接池
     type: com.alibaba.druid.pool.DruidDataSource
@@ -46,8 +57,8 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   group-configs:
-    - group: "书籍管理"
-      paths-to-match: "/books/**"
+    - group: "所有接口"
+      paths-to-match: "/api/**"
       packages-to-scan: com.cqu.springboot.controller
 knife4j:
   enable: true

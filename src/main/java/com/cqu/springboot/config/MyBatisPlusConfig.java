@@ -7,7 +7,11 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
 
 /**
@@ -24,13 +28,20 @@ import java.time.LocalDateTime;
 public class MyBatisPlusConfig {
 
     /**
-     * MyBatis-Plus 插件配置
+     * 主事务管理器（JDBC）
      * <p>
-     * 新版（3.5.x+）使用 MybatisPlusInterceptor 统一管理所有插件，
-     * 替代旧版的 PaginationInterceptor。
+     * 当项目中同时存在 Spring Data Neo4j（reactive 事务管理器）时，
+     * 需要指定 @Primary 让 @Transactional 默认使用 JDBC 事务管理器。
      * </p>
-     *
-     * @return MybatisPlusInterceptor 拦截器实例
+     */
+    @Bean
+    @Primary
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
+    }
+
+    /**
+     * MyBatis-Plus 插件配置
      */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {

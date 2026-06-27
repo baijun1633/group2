@@ -5,6 +5,7 @@ import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
 import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.RatingService;
+import com.cqu.springboot.service.UserBehaviorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 public class RatingController {
 
     private final RatingService ratingService;
+    private final UserBehaviorService userBehaviorService;
 
     /**
      * 提交评分
@@ -38,6 +40,8 @@ public class RatingController {
         Byte score = scoreInt.byteValue();
 
         ratingService.submitRating(userId, bookId, score);
+        // 行为埋点：记录评分行为（behaviorValue 存分数）
+        userBehaviorService.recordBehavior(userId, bookId, "rate", String.valueOf(score), null);
         return ApiResponse.success("评分成功", null);
     }
 

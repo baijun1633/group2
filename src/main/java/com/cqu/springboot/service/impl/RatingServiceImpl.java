@@ -102,14 +102,14 @@ public class RatingServiceImpl implements RatingService {
         Books book = new Books();
         book.setBookId(bookId);
 
-        if (ratingStats.get("avgRating") != null) {
+        if (ratingStats != null && ratingStats.get("avgRating") != null) {
             book.setAvgRating(new BigDecimal(ratingStats.get("avgRating").toString()).setScale(2, RoundingMode.HALF_UP));
         } else {
             book.setAvgRating(BigDecimal.ZERO);
         }
 
-        if (ratingStats.get("ratingCount") != null) {
-            book.setRatingCount(((Long) ratingStats.get("ratingCount")).intValue());
+        if (ratingStats != null && ratingStats.get("ratingCount") != null) {
+            book.setRatingCount(((Number) ratingStats.get("ratingCount")).intValue());
         } else {
             book.setRatingCount(0);
         }

@@ -100,6 +100,18 @@ public class Books implements Serializable {
     private Integer ratingCount;
 
     /**
+     * 浏览次数
+     */
+    @TableField("view_count")
+    private Integer viewCount;
+
+    /**
+     * 收藏次数
+     */
+    @TableField("collect_count")
+    private Integer collectCount;
+
+    /**
      * 系列信息(如 "三体三部曲")
      */
     @TableField("series_info")
@@ -110,6 +122,30 @@ public class Books implements Serializable {
      */
     @TableField("description")
     private String description;
+
+    /**
+     * 试读内容（前几章文本）
+     */
+    @TableField("preview_content")
+    private String previewContent;
+
+    /**
+     * 电子书文件URL（如 /uploads/ebooks/123.epub）
+     */
+    @TableField("ebook_url")
+    private String ebookUrl;
+
+    /**
+     * 电子书类型：epub/pdf
+     */
+    @TableField("ebook_type")
+    private String ebookType;
+
+    /**
+     * 电子书文件大小（字节）
+     */
+    @TableField("ebook_size")
+    private Long ebookSize;
 
     /**
      * 封面图片URL
