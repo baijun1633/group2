@@ -70,8 +70,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/kg/graph/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/kg/stats").permitAll()
 
-                // 推荐引擎接口 - 未登录返回热门/新书兜底（所有GET请求公开）
-                .requestMatchers(HttpMethod.GET, "/api/v1/recommend/**").permitAll()
+                // 推荐引擎接口 - 未登录返回热门/新书兜底（GET+POST 公开）
+                .requestMatchers("/api/v1/recommend/**").permitAll()
+
+                // 轮播图/首页聚合接口 - 无需登录
+                .requestMatchers("/api/v1/banners").permitAll()
+                .requestMatchers("/api/v1/home/**").permitAll()
 
                 // 管理员接口 - 按模块细分角色权限（概要设计文档 line 170-204）
                 // 图书管理员模块：图书 / 电子书 / 购书链接 / 知识图谱
