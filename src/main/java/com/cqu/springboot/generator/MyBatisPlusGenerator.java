@@ -20,7 +20,7 @@ public class MyBatisPlusGenerator {
     /** 数据库用户名 */
     private static final String DB_USERNAME = "manager";
     /** 数据库密码 */
-    private static final String DB_PASSWORD = "abc123456";
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("GEN_DB_PASSWORD", "CHANGE_ME");
 
     // ============== 生成器配置 ==============
     /** 生成代码的作者（会显示在类注释中） */

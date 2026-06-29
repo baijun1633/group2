@@ -7,7 +7,7 @@ spring:
     uri: bolt://localhost:7687
     authentication:
       username: neo4j
-      password: neo4j123
+      password: ${NEO4J_PASSWORD:neo4j123}
   # 文件上传配置（Task 8.7 电子书上传，最大 100MB）
   servlet:
     multipart:
@@ -17,8 +17,8 @@ spring:
     # 指定使用 Druid 连接池
     type: com.alibaba.druid.pool.DruidDataSource
     url: "jdbc:mysql://localhost:3306/library_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
-    username: root
-    password: root123
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root123}
     driver-class-name: com.mysql.cj.jdbc.Driver
     # Druid 连接池配置
     druid:
@@ -29,9 +29,9 @@ spring:
         # 监控页面访问路径（访问 http://localhost:8080/druid/）
         url-pattern: /druid/*
         # 监控页面登录用户名（留空则无需登录）
-        login-username: admin
+        login-username: ${DRUID_USERNAME:admin}
         # 监控页面登录密码
-        login-password: admin
+        login-password: ${DRUID_PASSWORD:admin}
         # 允许访问监控页面的IP（空表示全部允许，多个用逗号分隔）
         allow:
       # Web 监控过滤器配置（统计URL访问的SQL执行情况）

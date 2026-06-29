@@ -3,6 +3,7 @@ package com.cqu.springboot.controller;
 import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
+import com.cqu.springboot.common.RequireSecondFactor;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.service.BooksService;
 import com.cqu.springboot.service.EbookService;
@@ -138,6 +139,7 @@ public class AdminBooksController {
      * 删除图书
      * DELETE /api/v1/admin/books/{bookId}
      */
+    @RequireSecondFactor("删除图书")
     @DeleteMapping("/{bookId}")
     public ApiResponse<Void> deleteBook(@PathVariable Long bookId) {
         Books book = booksService.getById(bookId);
@@ -158,6 +160,7 @@ public class AdminBooksController {
      * </p>
      */
     @PostMapping("/batch")
+    @RequireSecondFactor("图书批量导入")
     public ApiResponse<Map<String, Object>> batchImport(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");

@@ -38,6 +38,12 @@ public class Users implements Serializable {
     private String password;
 
     /**
+     * 二级操作密码(BCrypt加密)，用于高危操作二次验证（图谱删除、推荐参数修改、用户权限变更、批量导入）
+     */
+    @TableField("second_password")
+    private String secondPassword;
+
+    /**
      * 昵称
      */
     @TableField("nickname")
@@ -62,7 +68,8 @@ public class Users implements Serializable {
     private String avatar;
 
     /**
-     * 角色: ADMIN-管理员, USER-普通用户
+     * 角色: USER-普通读者, BOOK_ADMIN-图书管理员, OPS_ADMIN-运营管理员, COMMUNITY_ADMIN-社区管理员, ADMIN-超级管理员
+     * @see com.cqu.springboot.common.RoleConstants
      */
     @TableField("role")
     private String role;

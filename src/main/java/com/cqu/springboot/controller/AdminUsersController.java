@@ -5,7 +5,12 @@ import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
 import com.cqu.springboot.common.PageResponse;
+import com.cqu.springboot.common.RequireSecondFactor;
+import com.cqu.springboot.entity.Books;
+import com.cqu.springboot.entity.ReadingProgress;
 import com.cqu.springboot.entity.Users;
+import com.cqu.springboot.service.BooksService;
+import com.cqu.springboot.service.ReadingProgressService;
 import com.cqu.springboot.service.UsersService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,7 +18,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 管理员用户管理控制器
@@ -27,6 +39,8 @@ import java.util.Map;
 public class AdminUsersController {
 
     private final UsersService usersService;
+    private final ReadingProgressService readingProgressService;
+    private final BooksService booksService;
 
     /**
      * 分页查询用户列表
@@ -83,6 +97,7 @@ public class AdminUsersController {
      */
     @Operation(summary = "修改用户", description = "更新用户昵称、邮箱、手机号、角色、状态、密码（仅传字段才更新）")
     @PutMapping("/{userId}")
+    @RequireSecondFactor("修改用户信息/权限")
     public ApiResponse<Void> updateUser(
             @Parameter(description = "用户ID", example = "1") @PathVariable Long userId,
             @RequestBody Map<String, Object> request) {
@@ -113,6 +128,7 @@ public class AdminUsersController {
      */
     @Operation(summary = "删除用户", description = "根据用户ID删除用户")
     @DeleteMapping("/{userId}")
+    @RequireSecondFactor("删除用户")
     public ApiResponse<Void> deleteUser(
             @Parameter(description = "用户ID", example = "1") @PathVariable Long userId) {
 
@@ -123,5 +139,68 @@ public class AdminUsersController {
 
         usersService.removeById(userId);
         return ApiResponse.success("删除成功", null);
+    }
+
+    /**
+     * 查看用户阅读统计
+     * GET /api/v1/admin/users/{userId}/reading/stats
+     */
+    @Operation(summary = "用户阅读统计", description = "运营管理员查看指定用户的阅读统计：周/月时长、已读完/在读数量")
+    @GetMapping("/{userId}/reading/stats")
+    public ApiResponse<Map<String, Object>> getUserReadingStats(
+            @Parameter(description = "用户ID", example = "9") @PathVariable Long userId) {
+        Users user = usersService.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return ApiResponse.success(readingProgressService.getReadingStats(userId));
+    }
+
+    /**
+     * 查看用户阅读历史
+     * GET /api/v1/admin/users/{userId}/reading/history
+     */
+    @Operation(summary = "用户阅读历史", description = "运营管理员查看指定用户的阅读历史，支持状态过滤（reading/finished），返回含图书标题")
+    @GetMapping("/{userId}/reading/history")
+    public ApiResponse<PageResponse<Map<String, Object>>> getUserReadingHistory(
+            @Parameter(description = "用户ID", example = "9") @PathVariable Long userId,
+            @Parameter(description = "状态：reading=在读, finished=已读, 不传=全部") @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Users user = usersService.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        PageResponse<ReadingProgress> result = readingProgressService.getReadingHistory(userId, status, page, size);
+        // 批量查询图书标题
+        Set<Long> bookIds = result.getItems().stream()
+                .map(ReadingProgress::getBookId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, String> bookTitleMap = new HashMap<>();
+        if (!bookIds.isEmpty()) {
+            List<Books> books = booksService.listByIds(bookIds);
+            for (Books b : books) {
+                bookTitleMap.put(b.getBookId(), b.getTitle());
+            }
+        }
+        // 组装返回（附加图书标题）
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (ReadingProgress rp : result.getItems()) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", rp.getId());
+            item.put("userId", rp.getUserId());
+            item.put("bookId", rp.getBookId());
+            item.put("bookTitle", bookTitleMap.get(rp.getBookId()));
+            item.put("currentPage", rp.getCurrentPage());
+            item.put("chapter", rp.getChapter());
+            item.put("totalPages", rp.getTotalPages());
+            item.put("percentage", rp.getPercentage());
+            item.put("readDuration", rp.getReadDuration());
+            item.put("device", rp.getDevice());
+            item.put("updateTime", rp.getUpdateTime());
+            items.add(item);
+        }
+        return ApiResponse.success(new PageResponse<>(items, result.getTotal(), page, size));
     }
 }

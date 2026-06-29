@@ -68,6 +68,12 @@ public class Reviews implements Serializable {
     private Integer repliesCount;
 
     /**
+     * 是否优质书评: 0-否, 1-是
+     */
+    @TableField("is_featured")
+    private Byte isFeatured;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")

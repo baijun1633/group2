@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pymysql
+neo4j
+pydantic
+python-dotenv
+numpy
+scipy

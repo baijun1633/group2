@@ -3,6 +3,7 @@ package com.cqu.springboot.controller;
 import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
+import com.cqu.springboot.common.RequireSecondFactor;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.entity.PurchaseLinks;
 import com.cqu.springboot.mapper.BooksMapper;
@@ -45,6 +46,7 @@ public class AdminPurchaseLinksController {
      */
     @Operation(summary = "批量导入购书链接", description = "CSV格式：book_id, platform, url, price")
     @PostMapping("/batch")
+    @RequireSecondFactor("购书链接批量导入")
     public ApiResponse<Map<String, Object>> batchImport(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");

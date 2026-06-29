@@ -77,7 +77,7 @@
             <artifactId>mybatis-plus-generator</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
-        <!--  Freemarker 模板引擎（代码生成器使用）  -->
+        
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
@@ -88,7 +88,7 @@
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
             <version>${knife4j.version}</version>
         </dependency>
-        <!--  Druid SpringBoot3专用连接池  -->
+        <!--  Druid SpringBoot3涓撶敤杩炴帴姹? -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-3-starter</artifactId>
@@ -132,14 +132,20 @@
             <artifactId>spring-boot-starter-data-neo4j</artifactId>
         </dependency>
 
-        <!--  epublib-core: EPUB 电子书解析（Task 8.7 电子书试读）  -->
+        <!--  epublib-core: EPUB 鐢靛瓙涔﹁В鏋愶紙Task 8.7 鐢靛瓙涔﹁瘯璇伙級  -->
         <dependency>
             <groupId>com.positiondev.epublib</groupId>
             <artifactId>epublib-core</artifactId>
             <version>3.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!--  Apache PDFBox: PDF 电子书解析（Task 8.7 电子书试读）  -->
+        <!--  Apache PDFBox: PDF 鐢靛瓙涔﹁В鏋愶紙Task 8.7 鐢靛瓙涔﹁瘯璇伙級  -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>

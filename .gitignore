@@ -34,3 +34,14 @@ build/
 
 ### Temp ###
 tmp/
+
+### Python ###
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.local
+python_service/.env
+
+### Uploads ###
+uploads/

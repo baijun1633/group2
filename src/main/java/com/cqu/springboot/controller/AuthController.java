@@ -5,10 +5,13 @@ import com.cqu.springboot.dto.AuthResponse;
 import com.cqu.springboot.dto.LoginRequest;
 import com.cqu.springboot.dto.RefreshRequest;
 import com.cqu.springboot.dto.RegisterRequest;
+import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 认证控制器
@@ -49,5 +52,20 @@ public class AuthController {
     public ApiResponse<AuthResponse> refreshToken(@Valid @RequestBody RefreshRequest request) {
         AuthResponse response = authService.refreshToken(request);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 设置/更新当前登录用户的二级操作密码
+     * POST /api/v1/auth/second-password
+     * <p>请求体：{ "currentPassword": "登录密码", "newPassword": "新二级密码" }</p>
+     * <p>需先验证登录密码以确认身份，再用 BCrypt 加密新二级密码</p>
+     */
+    @PostMapping("/second-password")
+    public ApiResponse<Void> setSecondPassword(@RequestBody Map<String, String> request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+        authService.setSecondPassword(userId, currentPassword, newPassword);
+        return ApiResponse.success("二级操作密码设置成功", null);
     }
 }

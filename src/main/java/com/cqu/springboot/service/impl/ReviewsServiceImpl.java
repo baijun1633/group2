@@ -219,4 +219,106 @@ public class ReviewsServiceImpl implements ReviewsService {
         review.setUpdateTime(LocalDateTime.now());
         reviewsMapper.updateById(review);
     }
+
+    @Override
+    @Transactional
+    public void markFeatured(Long reviewId, boolean featured) {
+        Reviews review = reviewsMapper.selectById(reviewId);
+        if (review == null || review.getStatus() == 3) {
+            throw new BusinessException(ErrorCode.REVIEW_NOT_FOUND);
+        }
+        // 只有已通过的书评可以标记优质
+        if (review.getStatus() != 1) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "只有已通过审核的书评才能标记为优质");
+        }
+        review.setIsFeatured((byte) (featured ? 1 : 0));
+        review.setUpdateTime(LocalDateTime.now());
+        reviewsMapper.updateById(review);
+        log.info("书评 {} 标记优质状态: {}", reviewId, featured);
+        // TODO: 同步至 Python 推荐引擎（当前纯 Java 实现，预留接口）
+    }
+
+    @Override
+    public Map<String, Object> getFeaturedReviews(int page, int size) {
+        int offset = (page - 1) * size;
+        LambdaQueryWrapper<Reviews> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reviews::getIsFeatured, 1)
+               .eq(Reviews::getStatus, 1)
+               .orderByDesc(Reviews::getUpdateTime);
+        wrapper.last("LIMIT " + offset + ", " + size);
+        List<Reviews> records = reviewsMapper.selectList(wrapper);
+
+        // 统计总数
+        LambdaQueryWrapper<Reviews> countWrapper = new LambdaQueryWrapper<>();
+        countWrapper.eq(Reviews::getIsFeatured, 1).eq(Reviews::getStatus, 1);
+        long total = reviewsMapper.selectCount(countWrapper);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public int batchDeleteReviews(List<Long> reviewIds) {
+        if (reviewIds == null || reviewIds.isEmpty()) {
+            return 0;
+        }
+        int deleted = 0;
+        for (Long reviewId : reviewIds) {
+            Reviews review = reviewsMapper.selectById(reviewId);
+            if (review != null && review.getStatus() != 3) {
+                review.setStatus((byte) 3);
+                review.setUpdateTime(LocalDateTime.now());
+                reviewsMapper.updateById(review);
+                deleted++;
+            }
+        }
+        log.info("批量软删除书评: 请求 {} 条, 实际删除 {} 条", reviewIds.size(), deleted);
+        return deleted;
+    }
+
+    @Override
+    public Map<String, Object> searchReviews(String keyword, Byte status, int page, int size) {
+        int offset = (page - 1) * size;
+        LambdaQueryWrapper<Reviews> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(Reviews::getStatus, status);
+        } else {
+            // 排除已删除的
+            wrapper.ne(Reviews::getStatus, 3);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.and(w -> w.like(Reviews::getContent, keyword)
+                             .or()
+                             .like(Reviews::getMarkdown, keyword));
+        }
+        wrapper.orderByDesc(Reviews::getCreateTime);
+        wrapper.last("LIMIT " + offset + ", " + size);
+        List<Reviews> records = reviewsMapper.selectList(wrapper);
+
+        // 统计总数
+        LambdaQueryWrapper<Reviews> countWrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            countWrapper.eq(Reviews::getStatus, status);
+        } else {
+            countWrapper.ne(Reviews::getStatus, 3);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            countWrapper.and(w -> w.like(Reviews::getContent, keyword)
+                                   .or()
+                                   .like(Reviews::getMarkdown, keyword));
+        }
+        long total = reviewsMapper.selectCount(countWrapper);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+        return result;
+    }
 }

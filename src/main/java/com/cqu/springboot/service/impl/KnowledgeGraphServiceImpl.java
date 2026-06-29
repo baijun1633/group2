@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -402,6 +403,81 @@ public class KnowledgeGraphServiceImpl implements KnowledgeGraphService {
         }
     }
 
+    @Override
+    public Map<String, Object> batchImportRelations(List<Map<String, String>> rows) {
+        int success = 0;
+        int failed = 0;
+        List<Map<String, Object>> errors = new ArrayList<>();
+
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, String> row = rows.get(i);
+            int rowNum = i + 2; // +2: 表头1行 + 索引从0开始
+            try {
+                String sourceType = row.get("sourceType");
+                String sourceId = row.get("sourceId");
+                String targetType = row.get("targetType");
+                String targetId = row.get("targetId");
+                String relationType = row.get("relationType");
+                String action = row.getOrDefault("action", "add");
+
+                if (sourceType == null || sourceType.isBlank()
+                        || sourceId == null || sourceId.isBlank()
+                        || targetType == null || targetType.isBlank()
+                        || targetId == null || targetId.isBlank()
+                        || relationType == null || relationType.isBlank()) {
+                    throw new IllegalArgumentException("sourceType/sourceId/targetType/targetId/relationType 均不能为空");
+                }
+
+                KgRelationRequest req = new KgRelationRequest();
+                req.setAction(action);
+                req.setSourceType(sourceType);
+                req.setSourceId(sourceId);
+                req.setTargetType(targetType);
+                req.setTargetId(targetId);
+                req.setRelationType(relationType);
+                editRelation(req);
+                success++;
+            } catch (Exception e) {
+                failed++;
+                Map<String, Object> err = new LinkedHashMap<>();
+                err.put("row", rowNum);
+                err.put("message", e.getMessage());
+                errors.add(err);
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", rows.size());
+        result.put("success", success);
+        result.put("failed", failed);
+        result.put("errors", errors);
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> executeCypher(String cypher, Map<String, Object> params, Integer limit) {
+        if (cypher == null || cypher.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "Cypher语句不能为空");
+        }
+        // 限制最大返回行数（防止意外全表扫描）
+        // 注意：写操作（MERGE/CREATE/DELETE/SET）不允许以 LIMIT 结尾
+        int maxRows = limit != null ? Math.min(limit, 1000) : 1000;
+        String upper = cypher.toUpperCase();
+        String finalCypher = cypher;
+        if (upper.contains("RETURN") && !upper.contains("LIMIT")) {
+            finalCypher = cypher + " LIMIT " + maxRows;
+        }
+
+        // RunnableSpec extends BindSpec<RunnableSpec>，bindAll 返回 RunnableSpec
+        // UnboundRunnableSpec extends RunnableSpec，向上转型后调用 bindAll 安全
+        Neo4jClient.RunnableSpec spec = neo4jClient.query(finalCypher);
+        if (params != null && !params.isEmpty()) {
+            spec = spec.bindAll(params);
+        }
+        Collection<Map<String, Object>> result = spec.fetch().all();
+        return new ArrayList<>(result);
+    }
+
     private String determineIdProperty(String label) {
         switch (label) {
             case "Book": return "bookId";
@@ -418,6 +494,197 @@ public class KnowledgeGraphServiceImpl implements KnowledgeGraphService {
             default:
                 return id;
         }
+    }
+
+    // ==================== 图谱实体 CRUD（P3） ====================
+
+    /** 实体类型 → Neo4j 标签 映射 */
+    private static final Map<String, String> ENTITY_LABELS = Map.of(
+            "author", "Author",
+            "publisher", "Publisher",
+            "tag", "Tag",
+            "series", "Series"
+    );
+
+    /** 校验实体类型并返回 Neo4j 标签名 */
+    private String resolveEntityLabel(String type) {
+        if (type == null || type.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "实体类型不能为空");
+        }
+        String label = ENTITY_LABELS.get(type.toLowerCase());
+        if (label == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    "不支持的实体类型: " + type + "，支持: author/publisher/tag/series");
+        }
+        return label;
+    }
+
+    @Override
+    public Map<String, Object> createEntity(String type, String name) {
+        String label = resolveEntityLabel(type);
+        if (name == null || name.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "实体名称不能为空");
+        }
+        name = name.trim();
+
+        // MERGE 幂等：已存在则不报错，返回 existed=true
+        Collection<Map<String, Object>> existing = neo4jClient.query(
+                "MATCH (n:" + label + " {name: $name}) RETURN n.name AS name LIMIT 1")
+                .bind(name).to("name")
+                .fetch().all();
+        boolean existed = !existing.isEmpty();
+        if (!existed) {
+            neo4jClient.query("MERGE (n:" + label + " {name: $name})")
+                    .bind(name).to("name")
+                    .run();
+            log.info("创建图谱实体: {}:{}", label, name);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("type", type.toLowerCase());
+        result.put("name", name);
+        result.put("existed", existed);
+        return result;
+    }
+
+    @Override
+    public void deleteEntity(String type, String name) {
+        String label = resolveEntityLabel(type);
+        if (name == null || name.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "实体名称不能为空");
+        }
+
+        // 先检查是否存在
+        Collection<Map<String, Object>> existing = neo4jClient.query(
+                "MATCH (n:" + label + " {name: $name}) RETURN n.name AS name LIMIT 1")
+                .bind(name).to("name")
+                .fetch().all();
+        if (existing.isEmpty()) {
+            throw new BusinessException(ErrorCode.KG_NODE_NOT_FOUND,
+                    "实体不存在: " + type + "/" + name);
+        }
+
+        // DETACH DELETE 同时删除节点和关系
+        neo4jClient.query("MATCH (n:" + label + " {name: $name}) DETACH DELETE n")
+                .bind(name).to("name")
+                .run();
+        log.info("删除图谱实体（含关系）: {}:{}", label, name);
+    }
+
+    @Override
+    public Map<String, Object> listEntities(String type, int page, int size) {
+        String label = resolveEntityLabel(type);
+        if (page < 1) page = 1;
+        if (size < 1 || size > 100) size = 20;
+        int skip = (page - 1) * size;
+
+        // 查询总数
+        Collection<Map<String, Object>> countResult = neo4jClient.query(
+                "MATCH (n:" + label + ") RETURN count(n) AS cnt")
+                .fetch().all();
+        long total = countResult.isEmpty() ? 0
+                : ((Number) countResult.iterator().next().get("cnt")).longValue();
+
+        // 分页查询 + 关联图书数
+        Collection<Map<String, Object>> rows = neo4jClient.query(
+                "MATCH (n:" + label + ") "
+                        + "OPTIONAL MATCH (n)<-[r]-(b:Book) "
+                        + "RETURN n.name AS name, count(DISTINCT b) AS bookCount "
+                        + "ORDER BY n.name SKIP $skip LIMIT $limit")
+                .bind(skip).to("skip")
+                .bind(size).to("limit")
+                .fetch().all();
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("type", type.toLowerCase());
+            item.put("name", row.get("name"));
+            item.put("bookCount", ((Number) row.get("bookCount")).intValue());
+            items.add(item);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("type", type.toLowerCase());
+        result.put("label", label);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+        result.put("items", items);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getEntity(String type, String name) {
+        String label = resolveEntityLabel(type);
+        if (name == null || name.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "实体名称不能为空");
+        }
+
+        Collection<Map<String, Object>> rows = neo4jClient.query(
+                "MATCH (n:" + label + " {name: $name}) "
+                        + "OPTIONAL MATCH (n)<-[r]-(b:Book) "
+                        + "RETURN n.name AS name, "
+                        + "collect(DISTINCT {bookId: b.bookId, title: b.title}) AS books")
+                .bind(name).to("name")
+                .fetch().all();
+
+        if (rows.isEmpty()) {
+            throw new BusinessException(ErrorCode.KG_NODE_NOT_FOUND,
+                    "实体不存在: " + type + "/" + name);
+        }
+
+        Map<String, Object> row = rows.iterator().next();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("type", type.toLowerCase());
+        result.put("label", label);
+        result.put("name", row.get("name"));
+        Object booksObj = row.get("books");
+        List<Object> books = booksObj instanceof List ? (List<Object>) booksObj : Collections.emptyList();
+        result.put("bookCount", books.size());
+        result.put("books", books);
+        return result;
+    }
+
+    @Override
+    public void renameEntity(String type, String oldName, String newName) {
+        String label = resolveEntityLabel(type);
+        if (oldName == null || oldName.isBlank() || newName == null || newName.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "旧名称和新名称均不能为空");
+        }
+        if (oldName.equals(newName)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新名称与旧名称相同");
+        }
+
+        // 检查旧实体存在
+        Collection<Map<String, Object>> existing = neo4jClient.query(
+                "MATCH (n:" + label + " {name: $oldName}) RETURN n.name AS name LIMIT 1")
+                .bind(oldName).to("oldName")
+                .fetch().all();
+        if (existing.isEmpty()) {
+            throw new BusinessException(ErrorCode.KG_NODE_NOT_FOUND,
+                    "实体不存在: " + type + "/" + oldName);
+        }
+
+        // 检查新名称是否已存在
+        Collection<Map<String, Object>> conflict = neo4jClient.query(
+                "MATCH (n:" + label + " {name: $newName}) RETURN n.name AS name LIMIT 1")
+                .bind(newName).to("newName")
+                .fetch().all();
+        if (!conflict.isEmpty()) {
+            throw new BusinessException(ErrorCode.KG_RELATION_EXISTS,
+                    "目标名称已存在: " + type + "/" + newName);
+        }
+
+        // 重命名：直接 SET name 属性即可保留所有关系（Neo4j 节点属性可变）
+        // 生产环境若需保留 @Id 唯一性约束，推荐 APOC 的 apoc.refactor.renameNode
+        neo4jClient.query(
+                "MATCH (n:" + label + " {name: $oldName}) SET n.name = $newName")
+                .bind(oldName).to("oldName")
+                .bind(newName).to("newName")
+                .run();
+
+        log.info("重命名图谱实体: {}:{} -> {}:{}", label, oldName, label, newName);
     }
 
     // ==================== 构建状态和统计 ====================

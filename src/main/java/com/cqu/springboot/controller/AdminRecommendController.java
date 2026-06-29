@@ -1,6 +1,7 @@
 package com.cqu.springboot.controller;
 
 import com.cqu.springboot.common.ApiResponse;
+import com.cqu.springboot.common.RequireSecondFactor;
 import com.cqu.springboot.service.RecommendService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,7 @@ public class AdminRecommendController {
 
     @Operation(summary = "更新推荐权重配置", description = "权重之和必须为1.0，key: kg_weight/itemcf_weight/hot_weight/new_weight")
     @PutMapping("/config")
+    @RequireSecondFactor("修改推荐算法权重配置")
     public ApiResponse<Void> updateConfig(@RequestBody Map<String, BigDecimal> weights) {
         recommendService.updateConfig(weights);
         return ApiResponse.success();

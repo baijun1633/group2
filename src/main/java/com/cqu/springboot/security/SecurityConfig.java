@@ -73,7 +73,18 @@ public class SecurityConfig {
                 // 推荐引擎接口 - 未登录返回热门/新书兜底（所有GET请求公开）
                 .requestMatchers(HttpMethod.GET, "/api/v1/recommend/**").permitAll()
 
-                // 管理员接口 - 需要ADMIN角色
+                // 管理员接口 - 按模块细分角色权限（概要设计文档 line 170-204）
+                // 图书管理员模块：图书 / 电子书 / 购书链接 / 知识图谱
+                .requestMatchers("/api/v1/admin/books/**").hasAnyRole("BOOK_ADMIN", "ADMIN")
+                .requestMatchers("/api/v1/admin/purchase-links/**").hasAnyRole("BOOK_ADMIN", "ADMIN")
+                .requestMatchers("/api/v1/admin/kg/**").hasAnyRole("BOOK_ADMIN", "ADMIN")
+                // 运营管理员模块：系统统计 / 推荐配置 / 用户管理
+                .requestMatchers("/api/v1/admin/stats/**").hasAnyRole("OPS_ADMIN", "ADMIN")
+                .requestMatchers("/api/v1/admin/recommend/**").hasAnyRole("OPS_ADMIN", "ADMIN")
+                .requestMatchers("/api/v1/admin/users/**").hasAnyRole("OPS_ADMIN", "ADMIN")
+                // 社区管理员模块：书评审核 / 优质标记 / 违规清理
+                .requestMatchers("/api/v1/admin/reviews/**").hasAnyRole("COMMUNITY_ADMIN", "ADMIN")
+                // 兜底：未来新增的 /api/v1/admin/** 路径仍需 ADMIN
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                 // Swagger/Knife4j 文档 - 无需登录

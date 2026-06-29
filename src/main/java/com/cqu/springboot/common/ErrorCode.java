@@ -67,6 +67,11 @@ public enum ErrorCode {
     EBOOK_PARSE_ERROR(9004, "电子书解析失败"),
     EBOOK_FILE_TOO_LARGE(9005, "电子书文件过大，最大支持 100MB"),
 
+    // 二级验证相关 (10xxx)
+    SECOND_FACTOR_REQUIRED(10001, "该操作为高危操作，需提供二级操作密码"),
+    SECOND_FACTOR_INVALID(10002, "二级操作密码不正确"),
+    SECOND_FACTOR_NOT_SET(10003, "尚未设置二级操作密码，请先设置"),
+
     // 系统错误 (5xxx)
     SYSTEM_ERROR(5001, "系统内部错误"),
     SERVICE_UNAVAILABLE(5002, "服务暂不可用");

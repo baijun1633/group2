@@ -158,4 +158,30 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(newRefreshToken)
                 .build();
     }
+
+    @Override
+    public void setSecondPassword(Long userId, String currentPassword, String newPassword) {
+        // 1. 查询用户
+        Users user = usersMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USERNAME_NOT_FOUND);
+        }
+
+        // 2. 验证登录密码以确认身份
+        if (!StringUtils.hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.PASSWORD_ERROR);
+        }
+
+        // 3. 校验新密码非空
+        if (!StringUtils.hasText(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "二级密码不能为空");
+        }
+
+        // 4. 加密并更新
+        user.setSecondPassword(passwordEncoder.encode(newPassword));
+        user.setUpdateTime(LocalDateTime.now());
+        usersMapper.updateById(user);
+
+        log.info("用户 {} 设置/更新二级操作密码成功", user.getUsername());
+    }
 }
