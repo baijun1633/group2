@@ -5,6 +5,7 @@ import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
 import com.cqu.springboot.common.PageResponse;
+import com.cqu.springboot.config.FileConfig;
 import com.cqu.springboot.dto.EbookInfo;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.security.SecurityUtils;
@@ -34,6 +35,7 @@ public class BooksController {
     private final BooksService booksService;
     private final UserBehaviorService userBehaviorService;
     private final EbookService ebookService;
+    private final FileConfig fileConfig;
 
     /**
      * 多维度搜索
@@ -50,6 +52,7 @@ public class BooksController {
         userBehaviorService.recordBehavior(SecurityUtils.getCurrentUserIdOrNull(), null, "search", keyword, null);
 
         Page<Books> result = booksService.searchBooks(keyword, page, size);
+        fixBookCoverImageUrls(result.getRecords());
         PageResponse<Books> response = new PageResponse<>(
                 result.getRecords(), result.getTotal(), page, size);
         return ApiResponse.success(response);
@@ -70,6 +73,7 @@ public class BooksController {
             @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size) {
 
         Page<Books> result = booksService.filterBooks(categoryId, tag, sortBy, order, page, size);
+        fixBookCoverImageUrls(result.getRecords());
         PageResponse<Books> response = new PageResponse<>(
                 result.getRecords(), result.getTotal(), page, size);
         return ApiResponse.success(response);
@@ -148,5 +152,22 @@ public class BooksController {
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
         EbookInfo info = ebookService.getEbookPreview(bookId, userId);
         return ApiResponse.success(info);
+    }
+
+    private void fixBookCoverImageUrls(List<Books> books) {
+        if (books != null) {
+            books.forEach(this::fixBookCoverImageUrl);
+        }
+    }
+
+    private void fixBookCoverImageUrl(Books book) {
+        if (book != null) {
+            if (book.getCoverImage() != null && !book.getCoverImage().startsWith("http")) {
+                book.setCoverImage(fileConfig.getBaseUrl() + book.getCoverImage());
+            }
+            if (book.getEbookUrl() != null && !book.getEbookUrl().startsWith("http")) {
+                book.setEbookUrl(fileConfig.getBaseUrl() + book.getEbookUrl());
+            }
+        }
     }
 }

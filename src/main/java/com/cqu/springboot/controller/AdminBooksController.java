@@ -6,6 +6,7 @@ import com.cqu.springboot.common.ErrorCode;
 import com.cqu.springboot.common.RequireSecondFactor;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.service.BooksService;
+import com.cqu.springboot.service.CoverImageService;
 import com.cqu.springboot.service.EbookService;
 import com.cqu.springboot.util.CsvUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ public class AdminBooksController {
     private final BooksService booksService;
     private final ObjectMapper objectMapper;
     private final EbookService ebookService;
+    private final CoverImageService coverImageService;
 
     /**
      * 单本录入
@@ -260,5 +262,24 @@ public class AdminBooksController {
         result.put("ebookType", url.substring(url.lastIndexOf('.') + 1));
         result.put("size", file.getSize());
         return ApiResponse.success("电子书上传成功", result);
+    }
+
+    /**
+     * 上传图书封面图片
+     * POST /api/v1/admin/books/{bookId}/cover
+     * <p>multipart/form-data，参数名 file，支持 jpg/jpeg/png/gif/webp，最大 5MB</p>
+     * <p>文件存到 d:/code/library_sys/uploads/covers/{bookId}.{ext}，并更新 books 表 cover_image 字段</p>
+     */
+    @Operation(summary = "上传图书封面图片", description = "上传封面图片，支持 jpg/jpeg/png/gif/webp，最大 5MB。文件名固定为 {bookId}.{ext}，重复上传会覆盖旧文件")
+    @PostMapping("/{bookId}/cover")
+    public ApiResponse<Map<String, Object>> uploadCover(
+            @PathVariable Long bookId,
+            @RequestParam("file") MultipartFile file) {
+        String url = coverImageService.uploadCover(bookId, file);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("bookId", bookId);
+        result.put("coverImage", url);
+        result.put("size", file.getSize());
+        return ApiResponse.success("封面上传成功", result);
     }
 }

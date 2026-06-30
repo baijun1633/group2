@@ -18,13 +18,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final SecondFactorInterceptor secondFactorInterceptor;
 
     /**
-     * 将 /uploads/ebooks/** 映射到本地目录 d:/code/library_sys/uploads/ebooks/
-     * <p>用于电子书文件（EPUB/PDF）的静态访问（如前端 PDF.js 直接加载）</p>
+     * 将 /uploads/** 映射到本地目录 d:/code/library_sys/uploads/
+     * <p>/uploads/ebooks/** - 电子书文件（EPUB/PDF）</p>
+     * <p>/uploads/covers/** - 图书封面图片</p>
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/ebooks/**")
                 .addResourceLocations("file:d:/code/library_sys/uploads/ebooks/");
+        registry.addResourceHandler("/covers/**")
+                .addResourceLocations("file:d:/code/library_sys/uploads/covers/", "classpath:/static/covers/");
     }
 
     /**

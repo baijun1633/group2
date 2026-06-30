@@ -10,6 +10,7 @@ import com.cqu.springboot.entity.Users;
 import com.cqu.springboot.mapper.UsersMapper;
 import com.cqu.springboot.security.JwtTokenProvider;
 import com.cqu.springboot.service.AuthService;
+import com.cqu.springboot.service.ShelvesService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 认证服务实现
@@ -33,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
+    private final ShelvesService shelvesService;
 
     @Override
     @Transactional
@@ -68,6 +72,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         usersMapper.insert(user);
+
+        // 创建默认书架
+        try {
+            shelvesService.createShelf(user.getUserId(), "我的书架", "默认书架");
+        } catch (Exception e) {
+            log.warn("创建默认书架失败: userId={}", user.getUserId(), e);
+        }
 
         // 4. 生成Token
         String accessToken = jwtTokenProvider.generateAccessToken(user.getUserId(), user.getUsername(), user.getRole());
@@ -105,6 +116,16 @@ public class AuthServiceImpl implements AuthService {
         // 4. 生成Token
         String accessToken = jwtTokenProvider.generateAccessToken(user.getUserId(), user.getUsername(), user.getRole());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserId());
+
+        // 如果用户没有书架，创建默认书架（兼容老用户）
+        try {
+            List<Map<String, Object>> shelves = shelvesService.getUserShelves(user.getUserId());
+            if (shelves == null || shelves.isEmpty()) {
+                shelvesService.createShelf(user.getUserId(), "我的书架", "默认书架");
+            }
+        } catch (Exception e) {
+            log.warn("登录时创建默认书架失败: userId={}", user.getUserId(), e);
+        }
 
         log.info("用户登录成功: username={}", user.getUsername());
 

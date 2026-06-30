@@ -1,6 +1,7 @@
 package com.cqu.springboot.controller;
 
 import com.cqu.springboot.common.ApiResponse;
+import com.cqu.springboot.config.FileConfig;
 import com.cqu.springboot.dto.RecommendItem;
 import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.KgRecommendService;
@@ -26,6 +27,7 @@ public class RecommendController {
     private final RecommendService recommendService;
     private final KgRecommendService kgRecommendService;
     private final RecommendationService recommendationService;
+    private final FileConfig fileConfig;
 
     @Operation(summary = "首页推荐", description = "登录用户返回个性化推荐（KG+ItemCF+热门+新书加权），未登录返回热门/新书兜底")
     @GetMapping("/home")
@@ -33,8 +35,8 @@ public class RecommendController {
             @RequestParam(defaultValue = "10") int limit) {
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
         List<RecommendItem> items = recommendService.getHomeRecommend(userId, limit);
-        // 登录用户落库推荐记录（未登录不落库）
         recommendationService.generateRecommendation(userId, items, "home");
+        fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
@@ -44,6 +46,7 @@ public class RecommendController {
             @RequestParam(defaultValue = "90") int days,
             @RequestParam(defaultValue = "10") int limit) {
         List<RecommendItem> items = recommendService.getHotBooks(days, limit);
+        fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
@@ -53,6 +56,7 @@ public class RecommendController {
             @RequestParam(defaultValue = "6") int months,
             @RequestParam(defaultValue = "10") int limit) {
         List<RecommendItem> items = recommendService.getNewBooks(months, limit);
+        fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
@@ -62,9 +66,9 @@ public class RecommendController {
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int limit) {
         List<RecommendItem> items = kgRecommendService.getSimilarBooks(bookId, limit);
-        // 登录用户落库推荐记录（未登录不落库）
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
         recommendationService.generateRecommendation(userId, items, "similar");
+        fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
@@ -74,9 +78,9 @@ public class RecommendController {
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int limit) {
         List<RecommendItem> items = kgRecommendService.getExtendedBooks(bookId, limit);
-        // 登录用户落库推荐记录（未登录不落库）
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
         recommendationService.generateRecommendation(userId, items, "extended");
+        fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
@@ -94,6 +98,19 @@ public class RecommendController {
     public ApiResponse<RecommendItem> explainRecommendation(@PathVariable Long bookId) {
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
         RecommendItem item = recommendService.explainRecommendation(userId, bookId);
+        fixCoverImageUrl(item);
         return ApiResponse.success(item);
+    }
+
+    private void fixCoverImageUrl(RecommendItem item) {
+        if (item != null && item.getCoverImage() != null && !item.getCoverImage().startsWith("http")) {
+            item.setCoverImage(fileConfig.getBaseUrl() + item.getCoverImage());
+        }
+    }
+
+    private void fixCoverImageUrls(List<RecommendItem> items) {
+        if (items != null) {
+            items.forEach(this::fixCoverImageUrl);
+        }
     }
 }

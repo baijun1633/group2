@@ -73,3 +73,10 @@ jwt:
   access-token-expiration: 7200000
   # refreshToken 有效期（毫秒）：7天
   refresh-token-expiration: 604800000
+
+# 文件资源配置
+file:
+  # 资源访问前缀（前端访问静态资源的基础URL）
+  # 开发环境：http://localhost:8080
+  # 生产环境：http://你的服务器IP:8080 或域名
+  base-url: http://10.242.5.120:8080

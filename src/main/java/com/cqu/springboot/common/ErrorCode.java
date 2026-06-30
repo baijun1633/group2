@@ -67,6 +67,10 @@ public enum ErrorCode {
     EBOOK_PARSE_ERROR(9004, "电子书解析失败"),
     EBOOK_FILE_TOO_LARGE(9005, "电子书文件过大，最大支持 100MB"),
 
+    // 图片相关 (11xxx)
+    IMAGE_FORMAT_UNSUPPORTED(11001, "图片格式不支持，仅支持 jpg/jpeg/png/gif/webp"),
+    IMAGE_FILE_TOO_LARGE(11002, "图片文件过大，最大支持 5MB"),
+
     // 二级验证相关 (10xxx)
     SECOND_FACTOR_REQUIRED(10001, "该操作为高危操作，需提供二级操作密码"),
     SECOND_FACTOR_INVALID(10002, "二级操作密码不正确"),

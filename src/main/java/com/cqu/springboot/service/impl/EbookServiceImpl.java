@@ -2,6 +2,7 @@ package com.cqu.springboot.service.impl;
 
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
+import com.cqu.springboot.config.FileConfig;
 import com.cqu.springboot.dto.EbookChapter;
 import com.cqu.springboot.dto.EbookInfo;
 import com.cqu.springboot.entity.Books;
@@ -65,6 +66,7 @@ public class EbookServiceImpl implements EbookService {
             "<h1[^>]*>([^<]+)</h1>", Pattern.CASE_INSENSITIVE);
 
     private final BooksService booksService;
+    private final FileConfig fileConfig;
 
     @Override
     public EbookInfo getEbookPreview(Long bookId, Long userId) {
@@ -76,8 +78,20 @@ public class EbookServiceImpl implements EbookService {
             throw new BusinessException(ErrorCode.EBOOK_NOT_UPLOADED);
         }
 
-        // 解析本地文件路径
-        String relativePath = book.getEbookUrl().replace(URL_PREFIX, "");
+        // 解析本地文件路径（处理相对路径和完整URL两种情况）
+        String ebookUrl = book.getEbookUrl();
+        String relativePath;
+        if (ebookUrl.startsWith("http://") || ebookUrl.startsWith("https://")) {
+            // 如果是完整URL，提取相对路径部分
+            int idx = ebookUrl.indexOf("/uploads/ebooks/");
+            if (idx > 0) {
+                relativePath = ebookUrl.substring(idx + URL_PREFIX.length());
+            } else {
+                throw new BusinessException(ErrorCode.EBOOK_FILE_NOT_FOUND);
+            }
+        } else {
+            relativePath = ebookUrl.replace(URL_PREFIX, "");
+        }
         File ebookFile = new File(UPLOAD_DIR, relativePath);
         if (!ebookFile.exists()) {
             log.warn("电子书文件不存在: bookId={}, path={}", bookId, ebookFile.getAbsolutePath());
@@ -169,8 +183,9 @@ public class EbookServiceImpl implements EbookService {
             book.setUpdateTime(LocalDateTime.now());
             booksService.updateById(book);
 
+            String fullUrl = fileConfig.getBaseUrl() + url;
             log.info("电子书文件已保存: bookId={}, file={}, size={}bytes", bookId, fileName, file.getSize());
-            return url;
+            return fullUrl;
         } catch (IOException e) {
             log.error("保存电子书文件失败: bookId={}", bookId, e);
             throw new BusinessException(ErrorCode.OPERATION_FAILED, "保存文件失败: " + e.getMessage());

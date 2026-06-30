@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
+import com.cqu.springboot.config.FileConfig;
 import com.cqu.springboot.entity.Books;
 import com.cqu.springboot.entity.PurchaseLinks;
 import com.cqu.springboot.mapper.BooksMapper;
@@ -28,6 +29,7 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
 
     private final PurchaseLinksMapper purchaseLinksMapper;
     private final ObjectMapper objectMapper;
+    private final FileConfig fileConfig;
 
     @Override
     public Page<Books> searchBooks(String keyword, int page, int size) {
@@ -104,7 +106,29 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
         detail.put("collectCount", book.getCollectCount());
         detail.put("seriesInfo", book.getSeriesInfo());
         detail.put("description", book.getDescription());
-        detail.put("coverImage", book.getCoverImage());
+        // 拼接完整的资源访问URL（使用配置的基础URL）
+        if (StringUtils.hasText(book.getCoverImage())) {
+            String coverImage = book.getCoverImage();
+            if (!coverImage.startsWith("http://") && !coverImage.startsWith("https://")) {
+                coverImage = fileConfig.getBaseUrl() + coverImage;
+            }
+            detail.put("coverImage", coverImage);
+        } else {
+            detail.put("coverImage", null);
+        }
+
+        // 拼接电子书完整URL
+        if (StringUtils.hasText(book.getEbookUrl())) {
+            String ebookUrl = book.getEbookUrl();
+            if (!ebookUrl.startsWith("http://") && !ebookUrl.startsWith("https://")) {
+                ebookUrl = fileConfig.getBaseUrl() + ebookUrl;
+            }
+            detail.put("ebookUrl", ebookUrl);
+        } else {
+            detail.put("ebookUrl", null);
+        }
+        detail.put("ebookType", book.getEbookType());
+        detail.put("ebookSize", book.getEbookSize());
         detail.put("status", book.getStatus());
         detail.put("createdAt", book.getCreateTime());
 
