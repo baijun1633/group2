@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -150,6 +151,7 @@ public class Books implements Serializable {
     /**
      * 封面图片URL
      */
+    @JsonProperty("coverUrl")
     @TableField("cover_image")
     private String coverImage;
 

@@ -60,25 +60,25 @@ public class RecommendController {
         return ApiResponse.success(items);
     }
 
-    @Operation(summary = "相似读物", description = "基于知识图谱1-2跳推理（同作者/同分类/同标签），无需登录")
+    @Operation(summary = "相似读物", description = "基于用户个人知识图谱1-2跳推理（同作者/同分类/同标签），需登录")
     @GetMapping("/{bookId}/similar")
     public ApiResponse<List<RecommendItem>> getSimilarBooks(
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int limit) {
-        List<RecommendItem> items = kgRecommendService.getSimilarBooks(bookId, limit);
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
+        List<RecommendItem> items = kgRecommendService.getSimilarBooks(userId, bookId, limit);
         recommendationService.generateRecommendation(userId, items, "similar");
         fixCoverImageUrls(items);
         return ApiResponse.success(items);
     }
 
-    @Operation(summary = "延伸阅读", description = "基于知识图谱3跳以上路径推理，发现间接关联的高质量图书，无需登录")
+    @Operation(summary = "延伸阅读", description = "基于用户个人知识图谱3跳以上路径推理，发现间接关联的高质量图书，需登录")
     @GetMapping("/{bookId}/extended")
     public ApiResponse<List<RecommendItem>> getExtendedBooks(
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int limit) {
-        List<RecommendItem> items = kgRecommendService.getExtendedBooks(bookId, limit);
         Long userId = SecurityUtils.getCurrentUserIdOrNull();
+        List<RecommendItem> items = kgRecommendService.getExtendedBooks(userId, bookId, limit);
         recommendationService.generateRecommendation(userId, items, "extended");
         fixCoverImageUrls(items);
         return ApiResponse.success(items);

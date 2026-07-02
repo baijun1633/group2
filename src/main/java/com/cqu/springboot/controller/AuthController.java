@@ -7,6 +7,9 @@ import com.cqu.springboot.dto.RefreshRequest;
 import com.cqu.springboot.dto.RegisterRequest;
 import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +20,7 @@ import java.util.Map;
  * 认证控制器
  * 路径: /api/v1/auth
  */
+@Tag(name = "认证管理", description = "用户注册、登录、Token刷新、二级密码")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -28,6 +32,7 @@ public class AuthController {
      * 用户注册
      * POST /api/v1/auth/register
      */
+    @Operation(summary = "用户注册", description = "用户注册，校验用户名唯一性，密码加密存储，返回用户信息和Token")
     @PostMapping("/register")
     public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
@@ -38,6 +43,7 @@ public class AuthController {
      * 用户登录
      * POST /api/v1/auth/login
      */
+    @Operation(summary = "用户登录", description = "用户登录，验证用户名密码，返回accessToken和refreshToken")
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
@@ -48,10 +54,21 @@ public class AuthController {
      * 刷新Token
      * POST /api/v1/auth/refresh
      */
+    @Operation(summary = "刷新Token", description = "刷新Token，验证refreshToken有效性，返回新Token对")
     @PostMapping("/refresh")
     public ApiResponse<AuthResponse> refreshToken(@Valid @RequestBody RefreshRequest request) {
         AuthResponse response = authService.refreshToken(request);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 退出登录
+     * POST /api/v1/auth/logout
+     */
+    @Operation(summary = "退出登录", description = "退出登录，前端删除Token即可")
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        return ApiResponse.success("退出成功", null);
     }
 
     /**
@@ -60,6 +77,7 @@ public class AuthController {
      * <p>请求体：{ "currentPassword": "登录密码", "newPassword": "新二级密码" }</p>
      * <p>需先验证登录密码以确认身份，再用 BCrypt 加密新二级密码</p>
      */
+    @Operation(summary = "设置二级操作密码", description = "设置/更新当前登录用户的二级操作密码，需先验证登录密码以确认身份")
     @PostMapping("/second-password")
     public ApiResponse<Void> setSecondPassword(@RequestBody Map<String, String> request) {
         Long userId = SecurityUtils.getCurrentUserId();

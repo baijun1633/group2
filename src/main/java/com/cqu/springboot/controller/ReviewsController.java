@@ -3,9 +3,11 @@ package com.cqu.springboot.controller;
 import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.common.BusinessException;
 import com.cqu.springboot.common.ErrorCode;
+import com.cqu.springboot.event.UserKgChangeEvent;
 import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.ReviewsService;
 import com.cqu.springboot.service.UserBehaviorService;
+import org.springframework.context.ApplicationEventPublisher;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,7 @@ public class ReviewsController {
 
     private final ReviewsService reviewsService;
     private final UserBehaviorService userBehaviorService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 发布书评
@@ -50,6 +53,8 @@ public class ReviewsController {
         // 行为埋点：记录书评行为（behaviorValue 存评论内容，超500字符截断避免超长）
         String reviewSnippet = content.length() > 500 ? content.substring(0, 500) : content;
         userBehaviorService.recordBehavior(userId, bookId, "review", reviewSnippet, null);
+        // 触发知识图谱变更事件
+        eventPublisher.publishEvent(new UserKgChangeEvent(this, userId, bookId, UserKgChangeEvent.Action.ADD));
 
         Map<String, Object> data = new HashMap<>();
         data.put("reviewId", reviewId);

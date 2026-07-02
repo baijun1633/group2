@@ -29,6 +29,6 @@ def graph_stats():
 
 @router.get("/subgraph")
 def subgraph(bookId: Optional[int] = None, depth: int = Query(2, ge=1, le=4),
-             limit: int = Query(50, ge=1, le=200)):
+             limit: int = Query(300, ge=1, le=2000)):
     """获取子图"""
     return {"code": 0, "message": "success", "data": get_subgraph(bookId, depth, limit)}

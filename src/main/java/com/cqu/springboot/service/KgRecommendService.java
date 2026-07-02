@@ -21,21 +21,23 @@ public interface KgRecommendService {
 
     /**
      * 获取与指定图书相似的图书（1-2跳）
-     * 同作者、同分类、同标签
+     * 同作者、同分类、同标签（基于用户个人图谱）
      *
+     * @param userId 用户ID（可为null，为null时返回空）
      * @param bookId 图书ID
      * @param limit  返回数量
      * @return 推荐列表
      */
-    List<RecommendItem> getSimilarBooks(Long bookId, int limit);
+    List<RecommendItem> getSimilarBooks(Long userId, Long bookId, int limit);
 
     /**
      * 获取延伸阅读（3跳及以上路径推理）
-     * 通过多跳路径发现间接关联的高质量图书
+     * 通过多跳路径发现间接关联的高质量图书（基于用户个人图谱）
      *
+     * @param userId 用户ID（可为null，为null时返回空）
      * @param bookId 图书ID
      * @param limit  返回数量
      * @return 推荐列表（含推理路径）
      */
-    List<RecommendItem> getExtendedBooks(Long bookId, int limit);
+    List<RecommendItem> getExtendedBooks(Long userId, Long bookId, int limit);
 }

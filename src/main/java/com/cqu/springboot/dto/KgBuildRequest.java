@@ -18,4 +18,9 @@ public class KgBuildRequest {
      * 是否强制全量重建（清空已有图谱数据后重新构建）
      */
     private Boolean forceRebuild = false;
+
+    /**
+     * 管理员指定目标用户ID列表（为空则构建所有已有图谱的用户）
+     */
+    private List<Long> targetUserIds;
 }

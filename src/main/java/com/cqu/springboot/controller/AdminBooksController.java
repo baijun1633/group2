@@ -245,12 +245,13 @@ public class AdminBooksController {
     }
 
     /**
-     * 上传电子书文件（EPUB/PDF）
+     * 上传电子书文件（EPUB/TXT/PDF）
      * POST /api/v1/admin/books/{bookId}/ebook
-     * <p>multipart/form-data，参数名 file，支持 .epub/.pdf，最大 100MB</p>
+     * <p>multipart/form-data，参数名 file，支持 .epub/.txt/.pdf，最大 100MB</p>
      * <p>文件存到 d:/code/library_sys/uploads/ebooks/{bookId}.{ext}，并更新 books 表</p>
+     * <p>推荐使用 EPUB 格式（体积小、阅读体验好），TXT 格式（最轻量、零依赖）作为备选</p>
      */
-    @Operation(summary = "上传电子书文件", description = "上传 EPUB/PDF 文件，最大 100MB。文件名固定为 {bookId}.{ext}，重复上传会覆盖旧文件")
+    @Operation(summary = "上传电子书文件", description = "上传 EPUB/TXT/PDF 文件，最大 100MB。文件名固定为 {bookId}.{ext}，重复上传会覆盖旧文件。推荐使用 EPUB 格式")
     @PostMapping("/{bookId}/ebook")
     public ApiResponse<Map<String, Object>> uploadEbook(
             @PathVariable Long bookId,

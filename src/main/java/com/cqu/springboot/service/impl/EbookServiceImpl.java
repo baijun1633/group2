@@ -44,6 +44,9 @@ import java.util.regex.Pattern;
  * - 未登录用户: 前 3 章
  * - 登录用户: 前 10 章
  * </p>
+ * <p>
+ * 支持格式: EPUB（推荐）、TXT（轻量）、PDF（兼容）
+ * </p>
  */
 @Slf4j
 @Service
@@ -52,18 +55,17 @@ public class EbookServiceImpl implements EbookService {
 
     private static final String UPLOAD_DIR = "d:/code/library_sys/uploads/ebooks";
     private static final String URL_PREFIX = "/uploads/ebooks/";
-    private static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100MB
+    private static final long MAX_FILE_SIZE = 100L * 1024 * 1024;
 
-    /** 未登录可试读章节数 */
     private static final int PREVIEW_CHAPTERS_ANONYMOUS = 3;
-    /** 登录用户可试读章节数 */
     private static final int PREVIEW_CHAPTERS_LOGGED_IN = 10;
 
-    /** 从 HTML 中提取 <title> 或 <h1> 的正则 */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
             "<title[^>]*>([^<]+)</title>", Pattern.CASE_INSENSITIVE);
     private static final Pattern H1_PATTERN = Pattern.compile(
             "<h1[^>]*>([^<]+)</h1>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CHAPTER_TITLE_PATTERN = Pattern.compile(
+            "^\\s*(第[零一二三四五六七八九十\\d]+[章节回部卷])(.*)", Pattern.CASE_INSENSITIVE);
 
     private final BooksService booksService;
     private final FileConfig fileConfig;
@@ -78,11 +80,9 @@ public class EbookServiceImpl implements EbookService {
             throw new BusinessException(ErrorCode.EBOOK_NOT_UPLOADED);
         }
 
-        // 解析本地文件路径（处理相对路径和完整URL两种情况）
         String ebookUrl = book.getEbookUrl();
         String relativePath;
         if (ebookUrl.startsWith("http://") || ebookUrl.startsWith("https://")) {
-            // 如果是完整URL，提取相对路径部分
             int idx = ebookUrl.indexOf("/uploads/ebooks/");
             if (idx > 0) {
                 relativePath = ebookUrl.substring(idx + URL_PREFIX.length());
@@ -108,6 +108,8 @@ public class EbookServiceImpl implements EbookService {
                 allChapters = parseEpub(ebookFile);
             } else if ("pdf".equals(type)) {
                 allChapters = parsePdf(ebookFile);
+            } else if ("txt".equals(type)) {
+                allChapters = parseTxt(ebookFile);
             } else {
                 throw new BusinessException(ErrorCode.EBOOK_FORMAT_UNSUPPORTED);
             }
@@ -153,7 +155,7 @@ public class EbookServiceImpl implements EbookService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "文件名不能为空");
         }
         String ext = extractExtension(originalName).toLowerCase();
-        if (!"epub".equals(ext) && !"pdf".equals(ext)) {
+        if (!"epub".equals(ext) && !"pdf".equals(ext) && !"txt".equals(ext)) {
             throw new BusinessException(ErrorCode.EBOOK_FORMAT_UNSUPPORTED);
         }
 
@@ -163,19 +165,15 @@ public class EbookServiceImpl implements EbookService {
         }
 
         try {
-            // 确保目录存在
             Path dir = Paths.get(UPLOAD_DIR);
             Files.createDirectories(dir);
 
-            // 删除旧文件（如果存在不同扩展名的旧文件）
             deleteOldEbookFile(bookId);
 
-            // 保存新文件
             String fileName = bookId + "." + ext;
             Path target = dir.resolve(fileName);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-            // 更新 books 表
             String url = URL_PREFIX + fileName;
             book.setEbookUrl(url);
             book.setEbookType(ext);
@@ -192,8 +190,6 @@ public class EbookServiceImpl implements EbookService {
         }
     }
 
-    // ============ EPUB 解析 ============
-
     private List<EbookChapter> parseEpub(File file) throws Exception {
         List<EbookChapter> chapters = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -206,7 +202,6 @@ public class EbookServiceImpl implements EbookService {
                 byte[] data = resource.getData();
                 String html = data == null ? "" : new String(data, StandardCharsets.UTF_8);
 
-                // 跳过空白章节（如封面、版权页等只有图片或极少文本的）
                 String title = extractTitleFromHtml(html, "第" + (i + 1) + "节");
                 String cleanHtml = cleanEpubHtml(html);
 
@@ -221,32 +216,22 @@ public class EbookServiceImpl implements EbookService {
         return chapters;
     }
 
-    /**
-     * 清理 EPUB HTML 内容（移除 head/script/style，仅保留 body 内容）
-     */
     private String cleanEpubHtml(String html) {
         if (html == null || html.isEmpty()) {
             return "";
         }
-        // 移除 head 部分
         String result = html.replaceAll("(?is)<head[^>]*>.*?</head>", "");
-        // 移除 script 和 style
         result = result.replaceAll("(?is)<script[^>]*>.*?</script>", "");
         result = result.replaceAll("(?is)<style[^>]*>.*?</style>", "");
-        // 提取 body 内容（如果有）
         Matcher bodyMatcher = Pattern.compile("(?is)<body[^>]*>(.*?)</body>").matcher(result);
         if (bodyMatcher.find()) {
             result = bodyMatcher.group(1);
         }
-        // 移除 XML 声明和 DOCTYPE
         result = result.replaceAll("(?is)<\\?xml[^>]*\\?>", "");
         result = result.replaceAll("(?is)<!DOCTYPE[^>]*>", "");
         return result.trim();
     }
 
-    /**
-     * 从 HTML 中提取标题（优先 <title>，其次 <h1>）
-     */
     private String extractTitleFromHtml(String html, String defaultTitle) {
         if (html == null || html.isEmpty()) {
             return defaultTitle;
@@ -262,8 +247,6 @@ public class EbookServiceImpl implements EbookService {
         return defaultTitle;
     }
 
-    // ============ PDF 解析 ============
-
     private List<EbookChapter> parsePdf(File file) throws Exception {
         List<EbookChapter> chapters = new ArrayList<>();
         try (PDDocument document = Loader.loadPDF(file)) {
@@ -277,7 +260,6 @@ public class EbookServiceImpl implements EbookService {
                     text = "";
                 }
                 text = text.trim();
-                // 把纯文本包成 HTML（用 <pre> 保留换行）
                 String html = text.isEmpty()
                         ? ""
                         : "<pre style=\"white-space: pre-wrap;\">" + escapeHtml(text) + "</pre>";
@@ -293,6 +275,70 @@ public class EbookServiceImpl implements EbookService {
         return chapters;
     }
 
+    private List<EbookChapter> parseTxt(File file) throws Exception {
+        List<EbookChapter> chapters = new ArrayList<>();
+        String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+
+        if (content.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.EBOOK_PARSE_ERROR, "TXT文件内容为空");
+        }
+
+        String[] rawChapters = content.split("(?m)^\\s*$");
+
+        StringBuilder currentContent = new StringBuilder();
+        String currentTitle = "";
+        int index = 1;
+
+        for (String rawChapter : rawChapters) {
+            rawChapter = rawChapter.trim();
+            if (rawChapter.isEmpty()) {
+                continue;
+            }
+
+            Matcher titleMatcher = CHAPTER_TITLE_PATTERN.matcher(rawChapter);
+            if (titleMatcher.find()) {
+                if (currentContent.length() > 0) {
+                    EbookChapter chapter = new EbookChapter();
+                    chapter.setIndex(index);
+                    chapter.setTitle(currentTitle.isEmpty() ? "第" + index + "章" : currentTitle);
+                    chapter.setContent("<pre style=\"white-space: pre-wrap;\">" + escapeHtml(currentContent.toString()) + "</pre>");
+                    chapter.setLength(currentContent.length());
+                    chapters.add(chapter);
+                    index++;
+                }
+                String titlePart = titleMatcher.group(1).trim();
+                String subtitlePart = titleMatcher.group(2).trim();
+                currentTitle = subtitlePart.isEmpty() ? titlePart : titlePart + " " + subtitlePart;
+                currentContent = new StringBuilder(rawChapter.substring(titleMatcher.end()).trim());
+            } else {
+                if (currentContent.length() > 0) {
+                    currentContent.append("\n\n");
+                }
+                currentContent.append(rawChapter);
+            }
+        }
+
+        if (currentContent.length() > 0 || !currentTitle.isEmpty()) {
+            EbookChapter chapter = new EbookChapter();
+            chapter.setIndex(index);
+            chapter.setTitle(currentTitle.isEmpty() ? "第" + index + "章" : currentTitle);
+            chapter.setContent("<pre style=\"white-space: pre-wrap;\">" + escapeHtml(currentContent.toString()) + "</pre>");
+            chapter.setLength(currentContent.length());
+            chapters.add(chapter);
+        }
+
+        if (chapters.isEmpty()) {
+            EbookChapter chapter = new EbookChapter();
+            chapter.setIndex(1);
+            chapter.setTitle("正文");
+            chapter.setContent("<pre style=\"white-space: pre-wrap;\">" + escapeHtml(content) + "</pre>");
+            chapter.setLength(content.length());
+            chapters.add(chapter);
+        }
+
+        return chapters;
+    }
+
     private String escapeHtml(String text) {
         if (text == null) {
             return "";
@@ -302,16 +348,11 @@ public class EbookServiceImpl implements EbookService {
                 .replace(">", "&gt;");
     }
 
-    // ============ 工具方法 ============
-
     private String extractExtension(String fileName) {
         int dot = fileName.lastIndexOf('.');
         return dot < 0 ? "" : fileName.substring(dot + 1);
     }
 
-    /**
-     * 删除指定 bookId 的旧电子书文件（不论扩展名）
-     */
     private void deleteOldEbookFile(Long bookId) {
         File dir = new File(UPLOAD_DIR);
         if (!dir.exists()) {

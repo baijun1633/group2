@@ -92,6 +92,7 @@ public class AuthServiceImpl implements AuthService {
                 .nickname(user.getNickname())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .role(user.getRole())
                 .build();
     }
 
@@ -135,6 +136,7 @@ public class AuthServiceImpl implements AuthService {
                 .nickname(user.getNickname())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .role(user.getRole())
                 .build();
     }
 
@@ -177,6 +179,7 @@ public class AuthServiceImpl implements AuthService {
                 .nickname(user.getNickname())
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
+                .role(user.getRole())
                 .build();
     }
 

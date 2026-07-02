@@ -2,10 +2,12 @@ package com.cqu.springboot.controller;
 
 import com.cqu.springboot.common.ApiResponse;
 import com.cqu.springboot.entity.Shelves;
+import com.cqu.springboot.event.UserKgChangeEvent;
 import com.cqu.springboot.security.SecurityUtils;
 import com.cqu.springboot.service.RecommendationService;
 import com.cqu.springboot.service.ShelvesService;
 import com.cqu.springboot.service.UserBehaviorService;
+import org.springframework.context.ApplicationEventPublisher;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,7 @@ public class ShelvesController {
     private final ShelvesService shelvesService;
     private final UserBehaviorService userBehaviorService;
     private final RecommendationService recommendationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 创建书架
@@ -88,6 +91,8 @@ public class ShelvesController {
         shelvesService.addBookToShelf(userId, shelfId, bookId, readingStatus);
         // 行为埋点：记录收藏行为
         userBehaviorService.recordBehavior(userId, bookId, "collect", null, null);
+        // 触发知识图谱变更事件
+        eventPublisher.publishEvent(new UserKgChangeEvent(this, userId, bookId, UserKgChangeEvent.Action.ADD));
         // 联动：标记推荐记录 is_collected=1（失败不影响主业务）
         try {
             recommendationService.recordCollect(userId, bookId);
@@ -125,6 +130,8 @@ public class ShelvesController {
         shelvesService.removeBookFromShelf(userId, shelfId, bookId);
         // 联动减少 books.collect_count（失败不影响主业务）
         userBehaviorService.decrementCollectCount(bookId);
+        // 触发知识图谱变更事件
+        eventPublisher.publishEvent(new UserKgChangeEvent(this, userId, bookId, UserKgChangeEvent.Action.REMOVE));
         return ApiResponse.success("移除成功", null);
     }
 

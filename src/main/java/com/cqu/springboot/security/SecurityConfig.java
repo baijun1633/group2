@@ -66,10 +66,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories").permitAll()
 
-                // 知识图谱可视化接口 - 无需登录
-                .requestMatchers(HttpMethod.GET, "/api/v1/kg/graph/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/kg/stats").permitAll()
-
                 // 推荐引擎接口 - 未登录返回热门/新书兜底（GET+POST 公开）
                 .requestMatchers("/api/v1/recommend/**").permitAll()
 

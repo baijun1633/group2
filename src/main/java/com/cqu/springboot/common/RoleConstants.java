@@ -21,7 +21,7 @@ public final class RoleConstants {
     /** 普通读者 */
     public static final String USER = "USER";
 
-    /** 图书管理员：图书 / 电子书 / 购书链接 / 知识图谱 */
+    /** 图书管理员：图书 / 电子书 / 购书链接 / 知识图谱（仅构建参数配置和统计查看） */
     public static final String BOOK_ADMIN = "BOOK_ADMIN";
 
     /** 运营管理员：系统统计 / 推荐配置 / 用户管理 */

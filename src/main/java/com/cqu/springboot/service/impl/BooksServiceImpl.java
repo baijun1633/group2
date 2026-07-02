@@ -112,9 +112,9 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
             if (!coverImage.startsWith("http://") && !coverImage.startsWith("https://")) {
                 coverImage = fileConfig.getBaseUrl() + coverImage;
             }
-            detail.put("coverImage", coverImage);
+            detail.put("coverUrl", coverImage);
         } else {
-            detail.put("coverImage", null);
+            detail.put("coverUrl", null);
         }
 
         // 拼接电子书完整URL

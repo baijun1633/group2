@@ -36,4 +36,9 @@ public class AuthResponse {
      * 刷新Token（有效期7天）
      */
     private String refreshToken;
+
+    /**
+     * 用户角色（USER / BOOK_ADMIN / OPS_ADMIN / COMMUNITY_ADMIN / ADMIN）
+     */
+    private String role;
 }
