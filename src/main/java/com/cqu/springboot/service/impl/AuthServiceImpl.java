@@ -208,4 +208,36 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("用户 {} 设置/更新二级操作密码成功", user.getUsername());
     }
+
+    @Override
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        // 1. 查询用户
+        Users user = usersMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USERNAME_NOT_FOUND);
+        }
+
+        // 2. 验证旧密码
+        if (!StringUtils.hasText(oldPassword) || !passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.PASSWORD_ERROR, "旧密码错误");
+        }
+
+        // 3. 校验新密码
+        if (!StringUtils.hasText(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新密码不能为空");
+        }
+        if (newPassword.length() < 6 || newPassword.length() > 50) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新密码长度需在6-50位之间");
+        }
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新密码不能与旧密码相同");
+        }
+
+        // 4. 加密并更新
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdateTime(LocalDateTime.now());
+        usersMapper.updateById(user);
+
+        log.info("用户 {} 修改登录密码成功", user.getUsername());
+    }
 }

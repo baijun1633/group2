@@ -39,19 +39,21 @@ public class BooksController {
 
     /**
      * 多维度搜索
-     * GET /api/v1/books/search?keyword=&page=&size=
+     * GET /api/v1/books/search?keyword=&publisher=&tag=&page=&size=
      */
-    @Operation(summary = "多维度搜索图书", description = "按书名、作者、ISBN进行模糊搜索")
+    @Operation(summary = "多维度搜索图书", description = "按书名、作者、ISBN、出版社、标签进行模糊搜索")
     @GetMapping("/search")
     public ApiResponse<PageResponse<Books>> searchBooks(
             @Parameter(description = "搜索关键词（书名、作者或ISBN）", example = "三体") @RequestParam(required = false) String keyword,
+            @Parameter(description = "出版社关键词", example = "人民文学") @RequestParam(required = false) String publisher,
+            @Parameter(description = "标签关键词", example = "科幻") @RequestParam(required = false) String tag,
             @Parameter(description = "页码（从1开始）", example = "1") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size) {
 
         // 行为埋点：记录搜索关键词（bookId 传 null，behaviorValue 存搜索关键词）
         userBehaviorService.recordBehavior(SecurityUtils.getCurrentUserIdOrNull(), null, "search", keyword, null);
 
-        Page<Books> result = booksService.searchBooks(keyword, page, size);
+        Page<Books> result = booksService.searchBooks(keyword, publisher, tag, page, size);
         fixBookCoverImageUrls(result.getRecords());
         PageResponse<Books> response = new PageResponse<>(
                 result.getRecords(), result.getTotal(), page, size);

@@ -13,9 +13,9 @@ import java.util.Map;
 public interface BooksService extends IService<Books> {
 
     /**
-     * 多维度搜索（按书名/作者/ISBN）
+     * 多维度搜索（按书名/作者/ISBN/出版社/标签）
      */
-    Page<Books> searchBooks(String keyword, int page, int size);
+    Page<Books> searchBooks(String keyword, String publisher, String tag, int page, int size);
 
     /**
      * 分类/标签筛选 + 排序

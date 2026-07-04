@@ -65,6 +65,12 @@ knife4j:
   setting:
     language: zh_cn
 
+# Python 推荐微服务配置
+python-service:
+  base-url: http://10.11.22.236:8001
+  connect-timeout: 5000
+  read-timeout: 10000
+
 # JWT 配置
 jwt:
   # 签名密钥（生产环境请更换为更安全的密钥）

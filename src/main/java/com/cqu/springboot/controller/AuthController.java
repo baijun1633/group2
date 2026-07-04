@@ -75,7 +75,7 @@ public class AuthController {
      * 设置/更新当前登录用户的二级操作密码
      * POST /api/v1/auth/second-password
      * <p>请求体：{ "currentPassword": "登录密码", "newPassword": "新二级密码" }</p>
-     * <p>需先验证登录密码以确认身份，再用 BCrypt 加密新二级密码</p>
+     * <p>需先验证登录密码以确认身份，再用 BCrypt 加密新二级密码存入 users.second_password</p>
      */
     @Operation(summary = "设置二级操作密码", description = "设置/更新当前登录用户的二级操作密码，需先验证登录密码以确认身份")
     @PostMapping("/second-password")
@@ -85,5 +85,21 @@ public class AuthController {
         String newPassword = request.get("newPassword");
         authService.setSecondPassword(userId, currentPassword, newPassword);
         return ApiResponse.success("二级操作密码设置成功", null);
+    }
+
+    /**
+     * 修改当前登录用户的登录密码
+     * POST /api/v1/auth/change-password
+     * <p>请求体：{ "oldPassword": "旧密码", "newPassword": "新密码" }</p>
+     * <p>需先验证旧密码以确认身份，再用 BCrypt 加密新密码存入 users.password</p>
+     */
+    @Operation(summary = "修改登录密码", description = "修改当前登录用户的登录密码，需先验证旧密码以确认身份")
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(@RequestBody Map<String, String> request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        String oldPassword = request.get("oldPassword");
+        String newPassword = request.get("newPassword");
+        authService.changePassword(userId, oldPassword, newPassword);
+        return ApiResponse.success("密码修改成功", null);
     }
 }

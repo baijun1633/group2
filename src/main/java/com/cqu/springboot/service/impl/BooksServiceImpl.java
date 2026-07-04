@@ -32,7 +32,7 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
     private final FileConfig fileConfig;
 
     @Override
-    public Page<Books> searchBooks(String keyword, int page, int size) {
+    public Page<Books> searchBooks(String keyword, String publisher, String tag, int page, int size) {
         Page<Books> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<Books> wrapper = new LambdaQueryWrapper<>();
 
@@ -43,6 +43,14 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
                     .or().like(Books::getAuthor, keyword)
                     .or().like(Books::getIsbn, keyword)
             );
+        }
+
+        if (StringUtils.hasText(publisher)) {
+            wrapper.like(Books::getPublisher, publisher);
+        }
+
+        if (StringUtils.hasText(tag)) {
+            wrapper.like(Books::getTags, tag);
         }
 
         // 只查询上架的书籍

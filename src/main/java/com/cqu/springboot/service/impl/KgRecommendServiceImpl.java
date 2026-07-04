@@ -7,6 +7,7 @@ import com.cqu.springboot.entity.UserProfile;
 import com.cqu.springboot.mapper.BooksMapper;
 import com.cqu.springboot.mapper.UserProfileMapper;
 import com.cqu.springboot.service.KgRecommendService;
+import com.cqu.springboot.service.PythonKgClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class KgRecommendServiceImpl implements KgRecommendService {
     private final BooksMapper booksMapper;
     private final UserProfileMapper userProfileMapper;
     private final ObjectMapper objectMapper;
+    private final PythonKgClient pythonKgClient;
 
     @Override
     public List<RecommendItem> recommendByKg(Long userId, int limit) {
@@ -56,6 +58,25 @@ public class KgRecommendServiceImpl implements KgRecommendService {
         List<String> preferredAuthors = parseJsonList(profile.getPreferredAuthors(), String.class);
         List<String> preferredTags = parseJsonArray(profile.getTagVector());
 
+        // 3. 先尝试调用 Python KG 推荐服务
+        try {
+            List<RecommendItem> pythonResults = pythonKgClient.recommend(
+                    preferredTags,
+                    preferredCategoryIds.stream().limit(3).map(String::valueOf).collect(Collectors.toList()),
+                    preferredCategoryIds.stream().limit(5).map(String::valueOf).collect(Collectors.toList()),
+                    preferredAuthors,
+                    Collections.emptyList(),
+                    limit
+            );
+            if (pythonResults != null && !pythonResults.isEmpty()) {
+                log.info("使用 Python KG 推荐服务返回 {} 条结果", pythonResults.size());
+                return pythonResults;
+            }
+        } catch (Exception e) {
+            log.warn("Python KG 推荐服务调用失败，回退到本地推荐: {}", e.getMessage());
+        }
+
+        // 4. 回退到本地 Neo4j 推荐
         List<RecommendItem> results = new ArrayList<>();
 
         // 3. 按偏好分类查询图谱（按用户过滤）

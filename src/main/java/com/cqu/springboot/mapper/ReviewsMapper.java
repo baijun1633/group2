@@ -19,9 +19,11 @@ public interface ReviewsMapper extends BaseMapper<Reviews> {
     @Select("""
             SELECT r.review_id, r.book_id, r.user_id, r.content, r.markdown,
                    r.status, r.likes_count, r.replies_count, r.create_time, r.update_time,
-                   u.username, u.nickname, u.avatar
+                   u.username, u.nickname, u.avatar,
+                   br.score
             FROM reviews r
             LEFT JOIN users u ON r.user_id = u.user_id
+            LEFT JOIN book_ratings br ON r.user_id = br.user_id AND r.book_id = br.book_id
             WHERE r.book_id = #{bookId} AND r.status = 1
             ORDER BY ${sortBy} ${order}
             LIMIT #{offset}, #{size}

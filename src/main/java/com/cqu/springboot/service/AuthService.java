@@ -34,4 +34,14 @@ public interface AuthService {
      * @param newPassword     新的二级操作密码
      */
     void setSecondPassword(Long userId, String currentPassword, String newPassword);
+
+    /**
+     * 修改当前登录用户的登录密码
+     * <p>需先验证旧密码，然后更新为新密码（BCrypt加密）</p>
+     *
+     * @param userId      当前登录用户ID
+     * @param oldPassword 旧密码（用于验证身份）
+     * @param newPassword 新密码
+     */
+    void changePassword(Long userId, String oldPassword, String newPassword);
 }

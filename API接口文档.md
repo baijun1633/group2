@@ -156,7 +156,7 @@
 
 | # | 方法 | 路径 | 参数 | 响应类型 | 权限 | 说明 |
 | - | ---- | ---- | ---- | -------- | ---- | ---- |
-| 1 | GET | `/search` | `keyword?`, `page=1`, `size=20` | `ApiResponse<PageResponse<Books>>` | 无需登录 | 多维度搜索（书名/作者/ISBN） |
+| 1 | GET | `/search` | `keyword?`, `publisher?`, `tag?`, `page=1`, `size=20` | `ApiResponse<PageResponse<Books>>` | 无需登录 | 多维度搜索（书名/作者/ISBN/出版社/标签） |
 | 2 | GET | `/` | `categoryId?`, `tag?`, `sortBy=createTime`, `order=desc`, `page=1`, `size=20` | `ApiResponse<PageResponse<Books>>` | 无需登录 | 分类/标签筛选+排序 |
 | 3 | GET | `/{bookId}` | 路径: bookId | `ApiResponse<Map<String,Object>>` | 无需登录 | 图书详情（含标签、购书链接） |
 | 4 | GET | `/{bookId}/preview` | 路径: bookId | `ApiResponse<Map<String,Object>>` | 无需登录 | 试读内容预览 |
@@ -167,8 +167,9 @@
 | 参数名 | 位置 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | `keyword` | Query | String | — | 搜索关键词（模糊匹配书名/作者/ISBN） |
+| `publisher` | Query | String | — | 出版社关键词（模糊匹配） |
+| `tag` | Query | String | — | 标签关键词（模糊匹配） |
 | `categoryId` | Query | Long | — | 分类ID |
-| `tag` | Query | String | — | 标签名称 |
 | `sortBy` | Query | String | `createTime` | 排序字段：createTime/avgRating/publishDate |
 | `order` | Query | String | `desc` | 排序方向：asc/desc |
 | `page` | Query | int | `1` | 页码 |

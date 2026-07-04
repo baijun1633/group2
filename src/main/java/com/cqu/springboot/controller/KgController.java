@@ -61,6 +61,14 @@ public class KgController {
         return ApiResponse.success(knowledgeGraphService.getGraphOverview(userId));
     }
 
+    @GetMapping("/graph/personal")
+    @Operation(summary = "个人知识图谱", description = "获取当前用户的个人知识图谱数据（nodes和edges）")
+    public ApiResponse<GraphData> getPersonalGraph(
+            @RequestParam(defaultValue = "2") Integer depth) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return ApiResponse.success(knowledgeGraphService.getGraphOverview(userId));
+    }
+
     @GetMapping("/stats")
     @Operation(summary = "图谱统计", description = "获取当前用户图谱中各类型节点和关系的数量统计")
     public ApiResponse<Map<String, Object>> getStats() {
