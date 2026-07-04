@@ -1,0 +1,96 @@
+/**
+ * 多端响应式媒体查询（大屏/笔记本/平板/手机）
+ */
+// 大屏桌面 ≥1440px
+@media (min-width: 1440px) {
+  .main-content {
+    max-width: 1440px;
+  }
+}
+
+// 笔记本小屏 992px ~ 1199px
+@media (max-width: 1199px) {
+  .header-inner {
+    max-width: 96%;
+    padding: 0 10px;
+  }
+  .main-content {
+    max-width: 96%;
+    padding: 16px;
+  }
+  .nav-menu {
+    gap: 8px;
+  }
+  .search-box .search-input {
+    width: 220px;
+  }
+  .book-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// 平板 768px ~ 991px
+@media (max-width: 991px) {
+  .header-left {
+    gap: 20px;
+  }
+  .nav-item {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .filter-label {
+    width: auto;
+  }
+  .list-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// 手机竖屏 ≤767px
+@media (max-width: 767px) {
+  .header-inner {
+    height: auto;
+    padding: 10px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .header-left,
+  .header-right {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .nav-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .search-box .search-input {
+    width: 100%;
+  }
+  .book-grid {
+    grid-template-columns: 1fr;
+  }
+  .book-card {
+    flex-direction: column;
+    .book-cover {
+      margin: 0 auto;
+    }
+  }
+  .sort-tabs {
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+  .list-container {
+    grid-template-columns: 1fr;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

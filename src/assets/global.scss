@@ -1,0 +1,44 @@
+/**
+ * 全局基础重置样式
+ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+ul,
+li {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  color: #333;
+}
+
+body {
+  font-size: 14px;
+  color: #333;
+  background-color: #fff;
+}
+
+/** 浮动工具类 */
+.fl {
+  float: left;
+}
+.fr {
+  float: right;
+}
+.clearfix::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/** 居中固定宽度容器 */
+.container {
+  width: 1440px;
+  margin: 0 auto;
+  max-width: 95vw;
+}
